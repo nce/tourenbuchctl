@@ -1,0 +1,48 @@
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Logs
+*.log
+
+# IDE-specific files
+.vscode/
+.idea/
+*.swp
+
+# Dependency directories
+vendor/
+Godeps/
+
+# Go build artifacts
+*.a
+*.o
+*.test
+*.exe
+strava2tourenbuch
+
+# Build directories
+_build/
+build/
+
+# Config and environment files
+.env
+.env.*
+
+# Tokens
+utils/token.json
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Module download cache
+go.sumapi
+
+# Ignore the swagger files
+pkg/stravaapi
