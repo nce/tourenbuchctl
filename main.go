@@ -1,42 +1,11 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"net/http"
-
-	"github.com/nce/strava2tourenbuch/pkg/oauth"
-	"github.com/nce/strava2tourenbuch/pkg/strava"
-	"github.com/nce/strava2tourenbuch/pkg/utils"
+	"github.com/nce/strava2tourenbuch/cmd"
 )
 
 func main() {
-	tokenFile := "/tmp/stravatoken.json"
-
-	token, err := utils.LoadToken(tokenFile)
-	if err == nil && token.Valid() {
-		log.Println("Using existing token")
-		client := oauth.StravaOauthConfig.Client(context.Background(), token)
-		strava.FetchStravaData(client)
-	} else {
-
-		server := &http.Server{Addr: ":8080"}
-
-		http.HandleFunc("/", handleMain)
-		http.HandleFunc("/login", oauth.HandleStravaLogin)
-		http.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
-			oauth.HandleStravaCallback(w, r, server, tokenFile)
-		})
-
-		log.Println("Started running on http://localhost:8080")
-		log.Fatal(server.ListenAndServe())
-	}
-}
-
-func handleMain(w http.ResponseWriter, r *http.Request) {
-	var html = `<html><body><a href="/login">Log in with Strava</a></body></html>`
-	fmt.Fprint(w, html)
+	cmd.Execute()
 }
 
 // 	id := int64(11769165697) // int64 | The identifier of the activity.

@@ -9,14 +9,15 @@ import (
 
 	"github.com/nce/strava2tourenbuch/pkg/strava"
 	"github.com/nce/strava2tourenbuch/pkg/utils"
+	"github.com/spf13/viper"
 
 	"golang.org/x/oauth2"
 )
 
 var (
 	StravaOauthConfig = &oauth2.Config{
-		ClientID:     "129561",
-		ClientSecret: "87721aa9e6045c617f01d71dcb89026bfad3e961",
+		ClientID:     viper.GetString("STRAVA_CLIENT_ID"),
+		ClientSecret: viper.GetString("STRAVA_CLIENT_SECRET"),
 		Endpoint: oauth2.Endpoint{
 			TokenURL: "https://www.strava.com/api/v3/oauth/token",
 			AuthURL:  "https://www.strava.com/api/v3/oauth/authorize",
