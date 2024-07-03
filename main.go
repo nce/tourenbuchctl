@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/nce/strava2tourenbuch/cmd"
+	"github.com/nce/tourenbuchctl/cmd"
 )
 
 func main() {

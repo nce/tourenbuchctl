@@ -6,21 +6,16 @@ import (
 	"net/http"
 	"os"
 
-	api "github.com/nce/strava2tourenbuch/pkg/stravaapi"
+	api "github.com/nce/tourenbuchctl/pkg/stravaapi"
 )
 
 func FetchStravaData(client *http.Client) {
 	configuration := api.NewConfiguration()
-	//bearer := "Bearer " + token.AccessToken
-	//configuration.AddDefaultHeader("Authorization", bearer)
 	configuration.HTTPClient = client
-	//fmt.Fprintf(os.Stdout, "%v\n", configuration)
 	apiClient := api.NewAPIClient(configuration)
 
 	id := int64(11769165697) // int64 | The identifier of the activity.
-	//ctx := context.WithValue(oauth2.NoContext, strava.ContextOAuth2, token)
 	foo, re, err := apiClient.ActivitiesApi.GetActivityById(context.Background(), id, nil)
-	//foo, re, err := apiClient.ActivitiesApi.GetLoggedInAthleteActivities(context.Background(), nil)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `ActivitiesAPI.xxx`: %v\n\n", err)

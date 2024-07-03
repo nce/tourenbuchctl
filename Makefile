@@ -1,7 +1,7 @@
 SWAGGER_FILE_URL=https://developers.strava.com/swagger/swagger.json
 GEN_DIR=./generated
 CLIENT_DIR=$(GEN_DIR)/client
-APP_NAME=tb
+APP_NAME=tourenbuchctl
 
 .PHONY: all clean generate build run
 

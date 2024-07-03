@@ -7,9 +7,9 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/nce/strava2tourenbuch/pkg/oauth"
-	"github.com/nce/strava2tourenbuch/pkg/strava"
-	"github.com/nce/strava2tourenbuch/pkg/utils"
+	"github.com/nce/tourenbuchctl/pkg/oauth"
+	"github.com/nce/tourenbuchctl/pkg/strava"
+	"github.com/nce/tourenbuchctl/pkg/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

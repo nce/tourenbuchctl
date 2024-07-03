@@ -24,7 +24,7 @@ Godeps/
 *.o
 *.test
 *.exe
-strava2tourenbuch
+tourenbuchctl
 
 # Build directories
 _build/

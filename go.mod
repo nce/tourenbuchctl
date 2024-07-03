@@ -1,4 +1,4 @@
-module github.com/nce/strava2tourenbuch
+module github.com/nce/tourenbuchctl
 
 go 1.22
 

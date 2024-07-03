@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/nce/strava2tourenbuch/pkg/utils"
+	"github.com/nce/tourenbuchctl/pkg/utils"
 	"github.com/spf13/viper"
 
 	"golang.org/x/oauth2"
