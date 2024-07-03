@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
+	"os/exec"
 
 	"github.com/nce/strava2tourenbuch/pkg/oauth"
 	"github.com/nce/strava2tourenbuch/pkg/strava"
@@ -32,21 +32,29 @@ var syncCmd = &cobra.Command{
 			strava.FetchStravaData(client)
 		} else {
 
-			server := &http.Server{Addr: ":8080"}
+			oauth.InitStravaOauthConfig()
 
-			http.HandleFunc("/", handleMain)
-			http.HandleFunc("/login", oauth.HandleStravaLogin)
-			http.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
-				oauth.HandleStravaCallback(w, r, server, tokenFile)
-			})
+			log.Println("Using no token")
+			log.Println("Sent to:", oauth.StravaOauthConfig.AuthCodeURL(oauth.OauthStateString))
+			err := exec.Command("open", oauth.StravaOauthConfig.AuthCodeURL(oauth.OauthStateString)).Start()
+			if err != nil {
+				log.Fatal(err)
+			}
 
-			log.Println("Started running on http://localhost:8080")
-			log.Fatal(server.ListenAndServe())
+			oauth.AuthStrava(tokenFile)
+
+			token, err := utils.LoadToken(tokenFile)
+
+			if err == nil && token.Valid() {
+				log.Println("Using new token")
+				client := oauth.StravaOauthConfig.Client(context.Background(), token)
+				strava.FetchStravaData(client)
+			}
+
 		}
 	},
 }
 
-// initConfig reads in config file and ENV variables if set.
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	viper.SetConfigFile(".env")
@@ -64,9 +72,4 @@ func initConfig() {
 
 func init() {
 	rootCmd.AddCommand(syncCmd)
-}
-
-func handleMain(w http.ResponseWriter, r *http.Request) {
-	var html = `<html><body><a href="/login">Log in with Strava</a></body></html>`
-	fmt.Fprint(w, html)
 }
