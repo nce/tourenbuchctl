@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/nce/tourenbuchctl/pkg/templates"
 	"github.com/nce/tourenbuchctl/pkg/utils"
 	"github.com/spf13/viper"
 
@@ -51,7 +52,10 @@ func InitStravaOauthConfig() {
 func handleStravaCallback(tokenFile string) func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	return func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 		if r.FormValue("state") != OauthStateString {
+
 			log.Println("Invalid oauth state")
+			templates.Render(w, "templates/html/strava-failure.html")
+
 			// insert html error here
 			return nil, fmt.Errorf("foo")
 		}
@@ -59,13 +63,11 @@ func handleStravaCallback(tokenFile string) func(w http.ResponseWriter, r *http.
 		token, err := StravaOauthConfig.Exchange(context.Background(), r.FormValue("code"))
 		if err != nil {
 			log.Println("Code exchange failed: ", err)
-			// insert html error here
+			templates.Render(w, "templates/html/strava-failure.html")
 			return nil, fmt.Errorf("bar")
 		}
 
-		//	client := StravaOauthConfig.Client(context.Background(), token)
-
-		fmt.Fprint(w, "Login successful!")
+		templates.Render(w, "templates/html/strava-success.html")
 
 		if err := utils.SaveToken(tokenFile, token); err != nil {
 			log.Println("Failed to save token: ", err)
