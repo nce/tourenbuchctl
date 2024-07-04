@@ -11,7 +11,7 @@ import (
 
 // TODO:  make this configurable via external config file (-> viper)
 const (
-	relativeTextLibraryPath  = "vcs/github/nce/tourenbuch"
+	relativeTextLibraryPath  = "vcs/github/nce/tourenbuch/"
 	relativeAssetLibraryPath = "Library/Mobile Documents/com~apple~CloudDocs/privat/sport/Tourenbuch/"
 )
 
@@ -34,8 +34,8 @@ type ActivityClasses interface {
 func (a *Activity) createFolder() error {
 
 	dirs := [2]string{
-		getTextLibraryPath() + "/" + a.category + "/" + a.name + "-" + a.normalizeDate(),
-		getAssetLibraryPath() + "/" + a.category + "/" + a.name + "-" + a.normalizeDate() + "/" + "img",
+		getTextLibraryPath() + a.category + "/" + a.name + "-" + a.normalizeDate(),
+		getAssetLibraryPath() + a.category + "/" + a.name + "-" + a.normalizeDate() + "/" + "img",
 	}
 
 	for _, dir := range dirs {
@@ -59,13 +59,19 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 	}
 
 	data := struct {
-		Name  string
-		Date  string
-		Stars []struct{}
+		Name             string
+		Date             string
+		Stars            []struct{}
+		Year             string
+		AssetLibraryPath string
+		TextLibraryPath  string
 	}{
-		Name:  a.name,
-		Date:  a.normalizeDateWithShortWeekday(),
-		Stars: make([]struct{}, a.rating),
+		Name:             a.name,
+		Date:             a.normalizeDateWithShortWeekday(),
+		Stars:            make([]struct{}, a.rating),
+		Year:             a.normalizeDateWithYear(),
+		AssetLibraryPath: getAssetLibraryPath(),
+		TextLibraryPath:  getTextLibraryPath(),
 	}
 
 	io := new(strings.Builder)
@@ -80,6 +86,10 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 
 func (a *Activity) normalizeDate() string {
 	return a.date.Format("02.01.2006")
+}
+
+func (a *Activity) normalizeDateWithYear() string {
+	return a.date.Format("2006")
 }
 
 func (a *Activity) normalizeDateWithShortWeekday() string {

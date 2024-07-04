@@ -9,7 +9,7 @@ activity:
     name: \framebox{P} xx
     qr:
     region: Allgäu -
-  season: Sommer 2024
+  season: Sommer {{ .Year }}
   rating: ${{ range .Stars }}\bigstar~{{ end }}$
   company:
   difficulty: S2
