@@ -1,8 +1,12 @@
 # tourenbuchctl
 A tool for working with my tourenbuch.
 
-Tourenbuch is a set of my personal outdoor sports activity. Each entry consists
-of gpx tracks, a map, stats, plotted elevation graphs and a overall summary.
+`Tourenbuch` is a digital & printed log book of my personal outdoor sports activities.
+Each entry consists of gpx tracks, map, stats, plotted elevation graphs and an
+overall summary.
+
+This CLI helps me to interact with it. Until i release more information about
+my (private) Tourenbuch, it's  probabaly not useful for anyone.
 
 ## Strava
 Activity stats like distance or climbed elevation gets queried from strava and
