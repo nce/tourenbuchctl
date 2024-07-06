@@ -6,11 +6,12 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/nce/tourenbuchctl/cmd/flags"
 	"github.com/nce/tourenbuchctl/pkg/activity"
 )
 
 var (
-	flags = &Flags{}
+	flag = &flags.CreateMtbFlags{}
 )
 
 func NewNewCommand() *cobra.Command {
@@ -39,8 +40,9 @@ func newMtbCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 
-			flags.name = args[0]
-			err := activity.CreateActivity(flags.name, flags.date, flags.rating)
+			flag.Core.Name = args[0]
+			activity.PrintLines()
+			err := activity.CreateActivity(flag)
 			if err != nil {
 				panic(err)
 			}
@@ -49,9 +51,16 @@ func newMtbCommand() *cobra.Command {
 
 	var dateStr string
 
+	// there is no maxHeight in mtb
+	// cmd.Flags().IntVar(&flags.maxHeight, "height", "h", "Maximium absolute elevation in meter.")
+	cmd.Flags().StringVarP(&flag.Core.Title, "title", "n", "", "Title of the activity")
+	cmd.Flags().StringVarP(&flag.Company, "company", "c", "", "Names of people who participated")
+	cmd.Flags().StringVar(&flag.Restaurant, "restaurant", "", "Names of people who participated")
 	cmd.Flags().StringVarP(&dateStr, "date", "d", "", "Date of the activity in the format 'DD.MM.YYYY'")
-	cmd.Flags().IntVarP(&flags.rating, "rating", "r", 3, "Rating of the activity in the format '1-5'."+
+	cmd.Flags().BoolVarP(&flag.Core.StravaSync, "sync", "s", true, "Get activity stats from strava")
+	cmd.Flags().IntVarP(&flag.Rating, "rating", "r", 3, "Rating of the activity in the format '1-5'."+
 		"This will be later displayed as stars")
+	cmd.Flags().IntVarP(&flag.Difficulty, "difficulty", "y", 3, "Difficulty of trails in S-Scale")
 
 	err := cmd.MarkFlagRequired("date")
 	if err != nil {
@@ -64,7 +73,7 @@ func newMtbCommand() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid date format: %v", err)
 			}
-			flags.date = parsedDate
+			flag.Core.Date = parsedDate
 		}
 		return nil
 	}

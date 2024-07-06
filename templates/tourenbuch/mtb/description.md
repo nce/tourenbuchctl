@@ -4,16 +4,16 @@ activity:
   mtb: true
   type: mtb
   date: {{ .Date }}
-  title: {{ .Name }}
+  title: {{ .Title }}
   pointOfOrigin:
     name: \framebox{P} xx
-    qr:
+    qr: {{ .ParkingQr }}
     region: Allgäu -
   season: Sommer {{ .Year }}
   rating: ${{ range .Stars }}\bigstar~{{ end }}$
-  company:
-  difficulty: S2
-  restaurant:
+  company: {{ .Company }}
+  difficulty: {{ .Difficulty }}
+  restaurant: {{ .Restaurant }}
 
 stats:
   ascent:

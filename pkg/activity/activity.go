@@ -7,6 +7,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/nce/tourenbuchctl/cmd/flags"
 )
 
 // TODO:  make this configurable via external config file (-> viper)
@@ -22,10 +24,11 @@ type Activity struct {
 	assetLocation string
 	date          time.Time
 	rating        int
+	difficulty    int
 }
 
 type ActivityClasses interface {
-	CreateActivity(name string, date time.Time, rating int) error
+	CreateActivity(flags *flags.CreateFlags) error
 }
 
 // Each Tourenbuch entry is represented by two folders. One folder contains the
