@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/nce/tourenbuchctl/cmd/flags"
+	"github.com/nce/tourenbuchctl/pkg/utils"
 )
 
 // TODO:  make this configurable via external config file (-> viper)
@@ -18,21 +20,25 @@ const (
 )
 
 type Activity struct {
-	category      string
-	name          string
-	textLocation  string
-	assetLocation string
-	date          time.Time
-	rating        int
-	difficulty    int
+	category        string
+	name            string
+	title           string
+	textLocation    string
+	assetLocation   string
+	date            time.Time
+	rating          int
+	difficulty      int
+	startLocationQr string
+	company         string
+	restaurant      string
 }
 
 type ActivityClasses interface {
-	CreateActivity(flags *flags.CreateFlags) error
+	CreateActivity(flag *flags.CreateFlags) error
 }
 
 // Each Tourenbuch entry is represented by two folders. One folder contains the
-// text part of the entry, the other one contains the assets (images, etc.).
+// text part of the activity, the other one contains the assets (images, etc.).
 // Text is stored in git; Assets are stored in iCloud
 func (a *Activity) createFolder() error {
 
@@ -68,6 +74,11 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 		Year             string
 		AssetLibraryPath string
 		TextLibraryPath  string
+		StartLocationQr  string
+		Title            string
+		Company          string
+		Difficulty       int
+		Restaurant       string
 	}{
 		Name:             a.name,
 		Date:             a.normalizeDateWithShortWeekday(),
@@ -75,6 +86,11 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 		Year:             a.normalizeDateWithYear(),
 		AssetLibraryPath: getAssetLibraryPath(),
 		TextLibraryPath:  getTextLibraryPath(),
+		StartLocationQr:  a.startLocationQr,
+		Title:            a.title,
+		Company:          a.company,
+		Difficulty:       a.difficulty,
+		Restaurant:       a.restaurant,
 	}
 
 	io := new(strings.Builder)
@@ -132,4 +148,41 @@ func getAssetLibraryPath() string {
 	}
 
 	return fmt.Sprintf("%s/%s", home, relativeAssetLibraryPath)
+}
+
+func GetStartLocationQr() string {
+	var loc string
+	locations, err := getStartingLocations()
+	if err != nil {
+		panic(err)
+	}
+
+	loc, err = utils.FuzzyFind("Select starting Locations", locations)
+	if err != nil {
+		panic(err)
+	}
+
+	return loc
+}
+
+func getStartingLocations() ([]string, error) {
+	var epsFiles []string
+
+	dir := getAssetLibraryPath() + "/meta/location-qr"
+
+	// Read directory contents
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter for .eps files
+	for _, file := range files {
+		if !file.IsDir() && filepath.Ext(file.Name()) == ".eps" {
+			fileName := strings.TrimSuffix(file.Name(), ".eps")
+			epsFiles = append(epsFiles, fileName)
+		}
+	}
+
+	return epsFiles, nil
 }

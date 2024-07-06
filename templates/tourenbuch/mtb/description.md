@@ -7,7 +7,7 @@ activity:
   title: {{ .Title }}
   pointOfOrigin:
     name: \framebox{P} xx
-    qr: {{ .ParkingQr }}
+    qr: {{ .StartLocationQr }}
     region: Allgäu -
   season: Sommer {{ .Year }}
   rating: ${{ range .Stars }}\bigstar~{{ end }}$
