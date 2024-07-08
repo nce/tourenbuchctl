@@ -9,7 +9,7 @@ activity:
     name: \framebox{P} xx
     qr: {{ .StartLocationQr }}
     region: Allgäu -
-  season: Sommer {{ .Year }}
+  season: {{ .Season }} {{ .Year }}
   rating: ${{ range .Stars }}\bigstar~{{ end }}$
   company: {{ .Company }}
   difficulty: {{ .Difficulty }}

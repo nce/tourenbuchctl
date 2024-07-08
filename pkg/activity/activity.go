@@ -79,6 +79,7 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 		Company          string
 		Difficulty       int
 		Restaurant       string
+		Season           string
 	}{
 		Name:             a.name,
 		Date:             a.normalizeDateWithShortWeekday(),
@@ -91,6 +92,7 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 		Company:          a.company,
 		Difficulty:       a.difficulty,
 		Restaurant:       a.restaurant,
+		Season:           a.getSeason(),
 	}
 
 	io := new(strings.Builder)
@@ -170,13 +172,13 @@ func getStartingLocations() ([]string, error) {
 
 	dir := getAssetLibraryPath() + "/meta/location-qr"
 
-	// Read directory contents
+	// Read all existing starting locations
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
 
-	// Filter for .eps files
+	// Don't display file ending in the fzf list
 	for _, file := range files {
 		if !file.IsDir() && filepath.Ext(file.Name()) == ".eps" {
 			fileName := strings.TrimSuffix(file.Name(), ".eps")
@@ -185,4 +187,19 @@ func getStartingLocations() ([]string, error) {
 	}
 
 	return epsFiles, nil
+}
+
+func (a *Activity) getSeason() string {
+	switch a.date.Month() {
+	case time.December, time.January, time.February, time.March:
+		return "Winter"
+	case time.April, time.May:
+		return "Frühling"
+	case time.June, time.July, time.August:
+		return "Sommer"
+	case time.September, time.October, time.November:
+		return "Herbst"
+	default:
+		return "unknown"
+	}
 }
