@@ -9,6 +9,8 @@ import (
 	"text/template"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/nce/tourenbuchctl/cmd/flags"
 	"github.com/nce/tourenbuchctl/pkg/utils"
 )
@@ -31,6 +33,11 @@ type Activity struct {
 	startLocationQr string
 	company         string
 	restaurant      string
+	distance        string
+	ascent          string
+	movingTime      string
+	elapsedTime     string
+	startTime       string
 }
 
 type ActivityClasses interface {
@@ -105,6 +112,73 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 	return io.String(), nil
 }
 
+func (a *Activity) updateActivity(file string) {
+	yamlFile, err := os.ReadFile(file)
+	if err != nil {
+		log.Fatalf("Error reading YAML file: %v", err)
+	}
+
+	// Parse the YAML file into a node tree
+	var root yaml.Node
+	err = yaml.Unmarshal(yamlFile, &root)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
+
+	// No idea. This is written by AI
+	// This modifies just one nested Yaml Node, without touching/killing the
+	// rest of the file. It updates the statistic data
+
+	// Navigate to the "stats" node and modify it
+	// Traverse the document to find the "stats" key
+	for i := 0; i < len(root.Content); i++ {
+		if root.Content[i].Kind == yaml.MappingNode {
+			for j := 0; j < len(root.Content[i].Content); j += 2 {
+				keyNode := root.Content[i].Content[j]
+				valueNode := root.Content[i].Content[j+1]
+
+				if keyNode.Value == "stats" {
+					// Modify the stats node
+					// Example: Modify a specific key-value pair within the "stats" node
+					for k := 0; k < len(valueNode.Content); k += 2 {
+						keyNode := valueNode.Content[k]
+						value := valueNode.Content[k+1]
+
+						switch keyNode.Value {
+						case "ascent":
+							value.Value = a.ascent
+						case "distance":
+							value.Value = a.distance
+						case "movingTime":
+							value.Value = a.movingTime
+						case "overallTime":
+							value.Value = a.elapsedTime
+						case "startTime":
+							value.Value = a.startTime
+						}
+
+						value.Tag = "!!str"
+
+					}
+				}
+			}
+		}
+	}
+
+	// Serialize the modified node tree back to a YAML string
+	output, err := yaml.Marshal(&root)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
+
+	// Write the modified YAML string back to the file
+	err = os.WriteFile(file, output, 0644)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
+
+}
+
 func (a *Activity) normalizeDate() string {
 	return a.date.Format("02.01.2006")
 }
@@ -170,7 +244,7 @@ func GetStartLocationQr() string {
 func getStartingLocations() ([]string, error) {
 	var epsFiles []string
 
-	dir := getAssetLibraryPath() + "/meta/location-qr"
+	dir := getTextLibraryPath() + "/meta/location-qr"
 
 	// Read all existing starting locations
 	files, err := os.ReadDir(dir)

@@ -2,9 +2,11 @@ package new
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/nce/tourenbuchctl/cmd/flags"
 	"github.com/nce/tourenbuchctl/pkg/activity"
@@ -19,6 +21,10 @@ func NewNewCommand() *cobra.Command {
 		Use:   "new",
 		Short: "Create a new activity in Tourenbuch",
 		Long:  "Create a new selected activity",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			// Initialize configuration before running any command
+			initConfig()
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			// Default action if no subcommands are specified
 			fmt.Println("newnewnew")
@@ -43,7 +49,6 @@ func newMtbCommand() *cobra.Command {
 			flag.Core.Name = args[0]
 
 			flag.Core.StartLocationQr = activity.GetStartLocationQr()
-
 			err := activity.CreateActivity(flag)
 			if err != nil {
 				panic(err)
@@ -100,4 +105,19 @@ func newSkitourCommand() *cobra.Command {
 		},
 	}
 	return newSkitourCmd
+}
+
+// initConfig reads in config file and ENV variables if set.
+func initConfig() {
+	viper.SetConfigFile(".env")
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			fmt.Println("Error: Config file .env not found")
+			os.Exit(1)
+		} else {
+			fmt.Printf("Error reading config file, %s\n", err)
+			os.Exit(1)
+		}
+	}
+	viper.AutomaticEnv() // read in environment variables that match
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/nce/tourenbuchctl/cmd/flags"
+	"github.com/nce/tourenbuchctl/pkg/strava"
 )
 
 func CreateActivity(flag *flags.CreateMtbFlags) error {
@@ -43,6 +44,18 @@ func CreateActivity(flag *flags.CreateMtbFlags) error {
 		if err != nil {
 			log.Printf("Failed to write to file: %v", err)
 		}
+	}
+
+	if flag.Core.StravaSync {
+		stats := strava.FetchStravaData(flag.Core.Date)
+
+		mtb.distance = stats.Distance
+		mtb.ascent = stats.Ascent
+		mtb.startTime = stats.StartDate
+		mtb.elapsedTime = stats.ElapsedTime
+		mtb.movingTime = stats.MovingTime
+
+		mtb.updateActivity(mtb.textLocation + "/description.md")
 	}
 
 	return nil
