@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"golang.org/x/oauth2"
 )
 
@@ -63,24 +64,23 @@ func (t *Token) Valid() bool {
 
 func FuzzyFind(header string, input []string) (string, error) {
 
-	// Step 2: Use fzf to let the user select a line
 	cmd := exec.Command("fzf", "--tmux", "right,30%,40%", "--header", header)
 
 	// Create pipes to communicate with fzf
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error creating stdin pipe:", err)
+		log.Error().Err(err).Msg("Error creating stdin pipe")
 		return "", err
 	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error creating stdout pipe:", err)
+		log.Error().Err(err).Msg("Error creating stdout pipe")
 		return "", err
 	}
 
 	// Start the fzf process
 	if err := cmd.Start(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error starting fzf:", err)
+		log.Error().Err(err).Msg("Error starting fzf")
 		return "", err
 	}
 
@@ -92,20 +92,19 @@ func FuzzyFind(header string, input []string) (string, error) {
 		}
 	}()
 
-	// Step 3: Capture the selected line from fzf's stdout
+	// Capture the selected line from fzf's stdout
 	var outBuf bytes.Buffer
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		outBuf.WriteString(scanner.Text())
 	}
 	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error reading from fzf:", err)
+		log.Error().Err(err).Msg("Error reading from fzf output")
 		return "", err
 	}
 
-	// Wait for fzf to finish
 	if err := cmd.Wait(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error waiting for fzf:", err)
+		log.Error().Err(err).Msg("Error waiting for fzf output")
 		return "", err
 	}
 

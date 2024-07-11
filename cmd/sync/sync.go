@@ -2,12 +2,12 @@ package sync
 
 import (
 	"fmt"
-	"os"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/nce/tourenbuchctl/pkg/strava"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -19,14 +19,12 @@ func NewSyncCommand() *cobra.Command {
 		Use:   "sync",
 		Short: "Sync Strava data to Tourenbuch",
 		Long:  "This parses strava activity data to the yaml format of Tourenbuch",
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			// Initialize configuration before running any command
-			initConfig()
-		},
 		Run: func(cmd *cobra.Command, args []string) {
-			foo := strava.FetchStravaData(parsedDate)
+			foo, err := strava.FetchStravaData(parsedDate)
+			if err != nil {
+				log.Fatal().Err(err).Msg("Error fetching strava data")
+			}
 			fmt.Println(foo.Distance)
-
 		},
 	}
 
@@ -50,19 +48,4 @@ func NewSyncCommand() *cobra.Command {
 	}
 
 	return cmd
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	viper.SetConfigFile(".env")
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			fmt.Println("Error: Config file .env not found")
-			os.Exit(1)
-		} else {
-			fmt.Printf("Error reading config file, %s\n", err)
-			os.Exit(1)
-		}
-	}
-	viper.AutomaticEnv() // read in environment variables that match
 }

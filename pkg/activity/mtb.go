@@ -1,61 +1,54 @@
 package activity
 
 import (
-	"log"
 	"os"
 
-	"github.com/nce/tourenbuchctl/cmd/flags"
 	"github.com/nce/tourenbuchctl/pkg/strava"
 )
 
-func CreateActivity(flag *flags.CreateMtbFlags) error {
+func (a *Activity) CreateActivity() error {
 
-	mtb := &Activity{
-		category:        "mtb",
-		name:            flag.Core.Name,
-		date:            flag.Core.Date,
-		rating:          flag.Rating,
-		difficulty:      flag.Difficulty,
-		startLocationQr: flag.Core.StartLocationQr,
-		title:           flag.Core.Title,
-		company:         flag.Company,
-		restaurant:      flag.Restaurant,
-	}
-
-	err := mtb.createFolder()
+	err := a.createFolder()
 	if err != nil {
-		panic("error creating folder")
+		return err
 	}
 
 	for _, file := range []string{"description.md", "elevation.plt", "Makefile", "img-even.tex"} {
 
-		text, err := mtb.initSkeleton(file)
+		text, err := a.initSkeleton(file)
 		if err != nil {
-			panic("error initializing skeleton")
+			return err
 		}
 
-		file, err := os.Create(mtb.textLocation + "/" + file)
+		file, err := os.Create(a.Meta.TextLocation + "/" + file)
 		if err != nil {
-			log.Printf("Failed to create file: %v", err)
+			return err
 		}
 		defer file.Close()
 
 		_, err = file.WriteString(text)
 		if err != nil {
-			log.Printf("Failed to write to file: %v", err)
+			return err
 		}
 	}
 
-	if flag.Core.StravaSync {
-		stats := strava.FetchStravaData(flag.Core.Date)
+	if a.Meta.StravaSync {
+		stats, err := strava.FetchStravaData(a.Tb.Date)
 
-		mtb.distance = stats.Distance
-		mtb.ascent = stats.Ascent
-		mtb.startTime = stats.StartDate
-		mtb.elapsedTime = stats.ElapsedTime
-		mtb.movingTime = stats.MovingTime
+		if err != nil {
+			return err
+		}
 
-		mtb.updateActivity(mtb.textLocation + "/description.md")
+		a.Tb.Distance = stats.Distance
+		a.Tb.Ascent = stats.Ascent
+		a.Tb.StartTime = stats.StartDate
+		a.Tb.ElapsedTime = stats.ElapsedTime
+		a.Tb.MovingTime = stats.MovingTime
+
+		err = a.updateActivity(a.Meta.TextLocation + "/description.md")
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

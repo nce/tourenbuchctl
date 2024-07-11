@@ -2,17 +2,17 @@ package strava
 
 import (
 	"context"
-	"fmt"
-	"log"
+	"errors"
 	"net/http"
-	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/antihax/optional"
 	"github.com/nce/tourenbuchctl/pkg/oauth"
 	api "github.com/nce/tourenbuchctl/pkg/stravaapi"
 	"github.com/nce/tourenbuchctl/pkg/utils"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -21,30 +21,31 @@ const (
 
 type StravaActivity struct {
 	Name        string
-	Distance    string
-	Ascent      string
-	StartDate   string
-	MovingTime  string
-	ElapsedTime string
+	Distance    int
+	Ascent      int
+	StartDate   time.Time
+	MovingTime  time.Duration
+	ElapsedTime time.Duration
 }
 
-func loginStrava() *http.Client {
+func loginStrava() (*http.Client, error) {
 
 	client := &http.Client{}
 
 	token, err := utils.LoadToken(tokenFile)
 	if err == nil && token.Valid() {
-		log.Println("Using existing token")
+		log.Debug().Msg("Using existing token from tokenfile to query strava")
 		client = oauth.StravaOauthConfig.Client(context.Background(), token)
 	} else {
 
+		log.Debug().Msg("Refreshing token from strava")
 		oauth.InitStravaOauthConfig()
 
-		log.Println("Using no token")
-		log.Println("Sent to:", oauth.StravaOauthConfig.AuthCodeURL(oauth.OauthStateString))
+		log.Debug().Str("Oauth URL", oauth.StravaOauthConfig.AuthCodeURL(oauth.OauthStateString))
+
 		err := exec.Command("open", oauth.StravaOauthConfig.AuthCodeURL(oauth.OauthStateString)).Start()
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 
 		oauth.AuthStrava(tokenFile)
@@ -52,78 +53,76 @@ func loginStrava() *http.Client {
 		token, err := utils.LoadToken(tokenFile)
 
 		if err == nil && token.Valid() {
-			log.Println("Using new token")
+			log.Debug().Msg("Using newly acquired token to query strava")
 			client = oauth.StravaOauthConfig.Client(context.Background(), token)
 		}
 	}
 
-	return client
+	return client, nil
 
 }
 
-func FetchStravaData(date time.Time) *StravaActivity {
-	client := loginStrava()
+func FetchStravaData(date time.Time) (*StravaActivity, error) {
+	client, err := loginStrava()
+	if err != nil {
+		return nil, err
+	}
 	configuration := api.NewConfiguration()
 	configuration.HTTPClient = client
 	apiClient := api.NewAPIClient(configuration)
 
 	opts := &api.ActivitiesApiGetLoggedInAthleteActivitiesOpts{
-		//Before: optional.NewInt32(int32(date.AddDate(0, 0, 1).Unix())),
 		Before: optional.NewInt32(int32(date.Add(24 * time.Hour).Unix())),
 		After:  optional.NewInt32(int32(date.Unix())),
 	}
-	foo, re, err := apiClient.ActivitiesApi.GetLoggedInAthleteActivities(context.Background(), opts)
+	allActivites, _, err := apiClient.ActivitiesApi.GetLoggedInAthleteActivities(context.Background(), opts)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ActivitiesAPI.xxx`: %v\n\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", re)
+		return nil, err
 	}
+
 	// response from `GetActivityById`: DetailedActivity
 	activityNames := []string{}
-	for _, act := range foo {
+	for _, act := range allActivites {
 		activityNames = append(activityNames, act.Name)
 	}
+	log.Debug().Str("Name", strings.Join(activityNames, " ")).Msg("Activities found on strava")
 
 	name, err := utils.FuzzyFind("Select activities to sync", activityNames)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "couldn't find activity to sync %s", err)
+		return nil, err
 	}
+	log.Debug().Str("Name", name).Msg("Activity selected via fuzzyFind")
 
 	// select the activity called `name`
-	for _, activitySummary := range foo {
+	for _, activitySummary := range allActivites {
 		if activitySummary.Name == name {
 
+			// querying for detailedActivity might be unnecessary, as the results
+			// are already in the summary
 			activity, _, err := apiClient.ActivitiesApi.GetActivityById(context.Background(), activitySummary.Id, nil)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error when calling `ActivitiesAPI.GetActivityById`: %v\n\n", err)
+				return nil, err
 			}
 
 			return &StravaActivity{
 				Name:        activity.Name,
 				Distance:    normalizeDistance(activity.Distance),
-				StartDate:   normalizeStartDate(activity.StartDate),
-				MovingTime:  normalizeElapsedTime(activity.MovingTime),
-				ElapsedTime: normalizeElapsedTime(activity.ElapsedTime),
-				Ascent:      fmt.Sprintf("%.0f", activity.TotalElevationGain),
-			}
+				StartDate:   activity.StartDate,
+				MovingTime:  normalizeDuration(activity.MovingTime),
+				ElapsedTime: normalizeDuration(activity.ElapsedTime),
+				Ascent:      normalizeDistance(activity.TotalElevationGain),
+			}, nil
 		}
 	}
 
-	return nil
+	return nil, errors.New("Querying strava for the activity failed")
 }
 
-func normalizeDistance(distance float32) string {
-	return fmt.Sprintf("%d", int32(distance/1000))
+func normalizeDistance(distance float32) int {
+	return int(distance)
 }
 
-func normalizeStartDate(startDate time.Time) string {
-	localTime := startDate.Local()
-	return localTime.Format("15:04")
-}
-
-func normalizeElapsedTime(seconds int32) string {
-	hours := seconds / 3600
-	minutes := (seconds % 3600) / 60
-	return fmt.Sprintf("%02d:%02d", hours, minutes)
-
+func normalizeDuration(duration int32) time.Duration {
+	return time.Duration(duration) * time.Second
 }

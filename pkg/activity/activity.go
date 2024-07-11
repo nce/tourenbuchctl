@@ -2,16 +2,19 @@ package activity
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
 
+	"github.com/rs/zerolog/log"
+
 	"gopkg.in/yaml.v3"
 
-	"github.com/nce/tourenbuchctl/cmd/flags"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
+
 	"github.com/nce/tourenbuchctl/pkg/utils"
 )
 
@@ -21,27 +24,33 @@ const (
 	relativeAssetLibraryPath = "Library/Mobile Documents/com~apple~CloudDocs/privat/sport/Tourenbuch/"
 )
 
-type Activity struct {
-	category        string
-	name            string
-	title           string
-	textLocation    string
-	assetLocation   string
-	date            time.Time
-	rating          int
-	difficulty      int
-	startLocationQr string
-	company         string
-	restaurant      string
-	distance        string
-	ascent          string
-	movingTime      string
-	elapsedTime     string
-	startTime       string
+type Meta struct {
+	Category           string
+	Name               string
+	TextLocation       string
+	AssetLocation      string
+	StravaSync         bool
+	QueryStartLocation bool
 }
 
-type ActivityClasses interface {
-	CreateActivity(flag *flags.CreateFlags) error
+type Tourenbuch struct {
+	Title           string
+	Date            time.Time
+	Rating          int
+	Difficulty      int
+	StartLocationQr string
+	Company         string
+	Restaurant      string
+	Distance        int
+	Ascent          int
+	MovingTime      time.Duration
+	ElapsedTime     time.Duration
+	StartTime       time.Time
+}
+
+type Activity struct {
+	Meta Meta
+	Tb   Tourenbuch
 }
 
 // Each Tourenbuch entry is represented by two folders. One folder contains the
@@ -49,29 +58,47 @@ type ActivityClasses interface {
 // Text is stored in git; Assets are stored in iCloud
 func (a *Activity) createFolder() error {
 
+	textPath, err := getTextLibraryPath()
+	if err != nil {
+		return err
+	}
+	assetPath, err := getAssetLibraryPath()
+	if err != nil {
+		return err
+	}
+
 	dirs := [2]string{
-		getTextLibraryPath() + a.category + "/" + a.name + "-" + a.normalizeDate(),
-		getAssetLibraryPath() + a.category + "/" + a.name + "-" + a.normalizeDate() + "/" + "img",
+		textPath + a.Meta.Category + "/" + a.Meta.Name + "-" + a.normalizeDate(),
+		assetPath + a.Meta.Category + "/" + a.Meta.Name + "-" + a.normalizeDate() + "/" + "img",
 	}
 
 	for _, dir := range dirs {
 		err := os.MkdirAll(dir, 0755)
 		if err != nil {
-			fmt.Println("error creating folder: ", err)
+			return err
 		}
 	}
 
-	a.textLocation = dirs[0]
-	a.assetLocation = dirs[1]
+	a.Meta.TextLocation = dirs[0]
+	a.Meta.AssetLocation = dirs[1]
 
 	return nil
 }
 
 func (a *Activity) initSkeleton(file string) (string, error) {
-	location := fmt.Sprintf("templates/tourenbuch/%s/%s", a.category, file)
+	location := fmt.Sprintf("templates/tourenbuch/%s/%s", a.Meta.Category, file)
 	tmpl, err := template.ParseFiles(location)
 	if err != nil {
-		log.Fatalf("Failed to parse template file: %v", err)
+		return "", err
+	}
+
+	textPath, err := getTextLibraryPath()
+	if err != nil {
+		return "", err
+	}
+	assetPath, err := getAssetLibraryPath()
+	if err != nil {
+		return "", err
 	}
 
 	data := struct {
@@ -88,17 +115,17 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 		Restaurant       string
 		Season           string
 	}{
-		Name:             a.name,
+		Name:             a.Meta.Name,
 		Date:             a.normalizeDateWithShortWeekday(),
-		Stars:            make([]struct{}, a.rating),
+		Stars:            make([]struct{}, a.Tb.Rating),
 		Year:             a.normalizeDateWithYear(),
-		AssetLibraryPath: getAssetLibraryPath(),
-		TextLibraryPath:  getTextLibraryPath(),
-		StartLocationQr:  a.startLocationQr,
-		Title:            a.title,
-		Company:          a.company,
-		Difficulty:       a.difficulty,
-		Restaurant:       a.restaurant,
+		AssetLibraryPath: assetPath,
+		TextLibraryPath:  textPath,
+		StartLocationQr:  a.Tb.StartLocationQr,
+		Title:            a.Tb.Title,
+		Company:          a.Tb.Company,
+		Difficulty:       a.Tb.Difficulty,
+		Restaurant:       a.Tb.Restaurant,
 		Season:           a.getSeason(),
 	}
 
@@ -107,27 +134,28 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 	// Execute the template and write to the file
 	err = tmpl.Execute(io, data)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	return io.String(), nil
 }
 
-func (a *Activity) updateActivity(file string) {
+// Updates the existing stats-yaml structure with new data
+func (a *Activity) updateActivity(file string) error {
 	yamlFile, err := os.ReadFile(file)
 	if err != nil {
-		log.Fatalf("Error reading YAML file: %v", err)
+		return err
 	}
 
 	// Parse the YAML file into a node tree
 	var root yaml.Node
 	err = yaml.Unmarshal(yamlFile, &root)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		return err
 	}
 
 	// No idea. This is written by AI
 	// This modifies just one nested Yaml Node, without touching/killing the
-	// rest of the file. It updates the statistic data
+	// rest of the file. It updates the statistic data (distance/ascent) of the activity
 
 	// Navigate to the "stats" node and modify it
 	// Traverse the document to find the "stats" key
@@ -146,15 +174,15 @@ func (a *Activity) updateActivity(file string) {
 
 						switch keyNode.Value {
 						case "ascent":
-							value.Value = a.ascent
+							value.Value = a.normalizeAscent()
 						case "distance":
-							value.Value = a.distance
+							value.Value = a.normalizeDistance()
 						case "movingTime":
-							value.Value = a.movingTime
+							value.Value = normalizeDuration(a.Tb.MovingTime)
 						case "overallTime":
-							value.Value = a.elapsedTime
+							value.Value = normalizeDuration(a.Tb.ElapsedTime)
 						case "startTime":
-							value.Value = a.startTime
+							value.Value = a.normalizeStartTime()
 						}
 
 						value.Tag = "!!str"
@@ -168,28 +196,47 @@ func (a *Activity) updateActivity(file string) {
 	// Serialize the modified node tree back to a YAML string
 	output, err := yaml.Marshal(&root)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		log.Fatal().Str("Error", err.Error()).Msg("Rading yaml file")
 	}
 
 	// Write the modified YAML string back to the file
 	err = os.WriteFile(file, output, 0644)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		log.Fatal().Str("Error", err.Error()).Msg("Writing file")
 	}
 
+	return nil
 }
 
 func (a *Activity) normalizeDate() string {
-	return a.date.Format("02.01.2006")
+	return a.Tb.Date.Format("02.01.2006")
 }
 
 func (a *Activity) normalizeDateWithYear() string {
-	return a.date.Format("2006")
+	return a.Tb.Date.Format("2006")
+}
+
+func normalizeDuration(d time.Duration) string {
+	return fmt.Sprintf("%02d:%02d", int(d.Hours()), int(d.Minutes())%60)
+}
+
+func (a *Activity) normalizeStartTime() string {
+	localTime := a.Tb.StartTime.Local()
+	return localTime.Format("15:04")
+}
+
+func (a *Activity) normalizeDistance() string {
+	return fmt.Sprintf("%.1f", float32(a.Tb.Distance)/float32(1000))
+}
+
+func (a *Activity) normalizeAscent() string {
+	p := message.NewPrinter(language.German)
+	return p.Sprintf("%d", a.Tb.Ascent)
 }
 
 func (a *Activity) normalizeDateWithShortWeekday() string {
 
-	date := a.date.Format("02.01.2006")
+	date := a.Tb.Date.Format("02.01.2006")
 
 	// abbrevations for german weekdays
 	weekdayAbbreviations := map[string]string{
@@ -202,49 +249,53 @@ func (a *Activity) normalizeDateWithShortWeekday() string {
 		"Saturday":  "Sa",
 	}
 
-	fullWeekday := a.date.Weekday().String()
+	fullWeekday := a.Tb.Date.Weekday().String()
 	abbreviatedWeekday := weekdayAbbreviations[fullWeekday]
 
 	return fmt.Sprintf("%s, %s", abbreviatedWeekday, date)
 }
 
-func getTextLibraryPath() string {
+func getTextLibraryPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
-	return fmt.Sprintf("%s/%s", home, relativeTextLibraryPath)
+	return fmt.Sprintf("%s/%s", home, relativeTextLibraryPath), nil
 }
 
-func getAssetLibraryPath() string {
+func getAssetLibraryPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
-	return fmt.Sprintf("%s/%s", home, relativeAssetLibraryPath)
+	return fmt.Sprintf("%s/%s", home, relativeAssetLibraryPath), nil
 }
 
-func GetStartLocationQr() string {
+func GetStartLocationQr() (string, error) {
 	var loc string
 	locations, err := getStartingLocations()
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
-	loc, err = utils.FuzzyFind("Select starting Locations", locations)
+	loc, err = utils.FuzzyFind("Select starting Location", locations)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
-	return loc
+	return loc, nil
 }
 
 func getStartingLocations() ([]string, error) {
 	var epsFiles []string
 
-	dir := getTextLibraryPath() + "/meta/location-qr"
+	dir, err := getTextLibraryPath()
+	if err != nil {
+		return nil, err
+	}
+	dir += "/meta/location-qr"
 
 	// Read all existing starting locations
 	files, err := os.ReadDir(dir)
@@ -264,7 +315,7 @@ func getStartingLocations() ([]string, error) {
 }
 
 func (a *Activity) getSeason() string {
-	switch a.date.Month() {
+	switch a.Tb.Date.Month() {
 	case time.December, time.January, time.February, time.March:
 		return "Winter"
 	case time.April, time.May:
