@@ -6,35 +6,55 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/nce/tourenbuchctl/pkg/strava"
+	"github.com/nce/tourenbuchctl/pkg/activity"
 	"github.com/spf13/cobra"
 )
 
 var (
 	parsedDate time.Time
+	act        = &activity.Activity{}
 )
 
 func NewSyncCommand() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "sync",
 		Short: "Sync Strava data to Tourenbuch",
-		Long:  "This parses strava activity data to the yaml format of Tourenbuch",
+		Long:  "This parses strava activity data to the yaml format of Tourenbuch and exports the gpx track.",
 		Run: func(cmd *cobra.Command, args []string) {
-			foo, err := strava.FetchStravaData(parsedDate)
+
+			var date string
+			var err error
+
+			name, date, err := activity.GetActivityLocation()
+			if err != nil {
+				log.Fatal().Err(err).Msg("Error getting activity location")
+			}
+
+			if act.Meta.Name == "" {
+				act.Meta.Name = name
+			}
+
+			if parsedDate.IsZero() {
+				act.Tb.Date, err = time.Parse("02.01.2006", date)
+				if err != nil {
+					log.Fatal().Err(err).Str("date", date).Msg("Error parsing the date extracted from the activity file location")
+				}
+			} else {
+				act.Tb.Date = parsedDate
+			}
+
+			err = act.StravaSync()
 			if err != nil {
 				log.Fatal().Err(err).Msg("Error fetching strava data")
 			}
-			fmt.Println(foo.Distance)
 		},
 	}
 
 	var dateStr string
 
+	cmd.Flags().BoolVarP(&act.Meta.StravaSync, "sync", "s", true, "Get activity stats from strava")
+	cmd.Flags().BoolVarP(&act.Meta.StravaGpxSync, "gpx", "g", true, "Get gpx track from strava")
 	cmd.Flags().StringVarP(&dateStr, "date", "d", "", "Date of the activity in the format 'DD.MM.YYYY'")
-	err := cmd.MarkFlagRequired("date")
-	if err != nil {
-		panic(err)
-	}
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		if dateStr != "" {

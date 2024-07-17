@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -30,6 +31,8 @@ type Meta struct {
 	TextLocation       string
 	AssetLocation      string
 	StravaSync         bool
+	StravaGpxSync      bool
+	StravaId           int64
 	QueryStartLocation bool
 }
 
@@ -58,11 +61,11 @@ type Activity struct {
 // Text is stored in git; Assets are stored in iCloud
 func (a *Activity) createFolder() error {
 
-	textPath, err := getTextLibraryPath()
+	textPath, err := GetTextLibraryPath()
 	if err != nil {
 		return err
 	}
-	assetPath, err := getAssetLibraryPath()
+	assetPath, err := GetAssetLibraryPath()
 	if err != nil {
 		return err
 	}
@@ -92,11 +95,11 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 		return "", err
 	}
 
-	textPath, err := getTextLibraryPath()
+	textPath, err := GetTextLibraryPath()
 	if err != nil {
 		return "", err
 	}
-	assetPath, err := getAssetLibraryPath()
+	assetPath, err := GetAssetLibraryPath()
 	if err != nil {
 		return "", err
 	}
@@ -143,6 +146,7 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 func (a *Activity) updateActivity(file string) error {
 	yamlFile, err := os.ReadFile(file)
 	if err != nil {
+		log.Error().Str("filename", file).Msg("Error reading file")
 		return err
 	}
 
@@ -150,6 +154,7 @@ func (a *Activity) updateActivity(file string) error {
 	var root yaml.Node
 	err = yaml.Unmarshal(yamlFile, &root)
 	if err != nil {
+		log.Error().Str("filename", file).Msg("Error unmarshalling file")
 		return err
 	}
 
@@ -196,13 +201,15 @@ func (a *Activity) updateActivity(file string) error {
 	// Serialize the modified node tree back to a YAML string
 	output, err := yaml.Marshal(&root)
 	if err != nil {
-		log.Fatal().Str("Error", err.Error()).Msg("Rading yaml file")
+		log.Error().Str("filename", file).Msg("Serializing to yaml failed")
+		return err
 	}
 
 	// Write the modified YAML string back to the file
 	err = os.WriteFile(file, output, 0644)
 	if err != nil {
-		log.Fatal().Str("Error", err.Error()).Msg("Writing file")
+		log.Error().Str("filename", file).Msg("Writing back to file failed")
+		return err
 	}
 
 	return nil
@@ -255,7 +262,7 @@ func (a *Activity) normalizeDateWithShortWeekday() string {
 	return fmt.Sprintf("%s, %s", abbreviatedWeekday, date)
 }
 
-func getTextLibraryPath() (string, error) {
+func GetTextLibraryPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
@@ -264,13 +271,49 @@ func getTextLibraryPath() (string, error) {
 	return fmt.Sprintf("%s/%s", home, relativeTextLibraryPath), nil
 }
 
-func getAssetLibraryPath() (string, error) {
+func GetAssetLibraryPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
 
 	return fmt.Sprintf("%s/%s", home, relativeAssetLibraryPath), nil
+}
+
+func GetActivityLocation() (string, string, error) {
+	var loc string
+	locations, err := getActivityLocations()
+	if err != nil {
+		return "", "", err
+	}
+
+	loc, err = utils.FuzzyFind("Select Activity to update", locations)
+	if err != nil {
+		return "", "", err
+	}
+
+	name, date, err := splitDirectoryName(loc)
+	if err != nil {
+		return "", "", err
+	}
+
+	return name, date, nil
+}
+
+func splitDirectoryName(dirName string) (string, string, error) {
+	// Regular expression to match the schema "name-dd.mm.yyyy"
+	re := regexp.MustCompile(`^([a-zA-Z0-9\.]+)-(\d{2}\.\d{2}\.\d{4})$`)
+
+	matches := re.FindStringSubmatch(dirName)
+	if matches == nil {
+		return "", "", fmt.Errorf("directory name %q does not match the expected schema", dirName)
+	}
+
+	// The first submatch is the full match, the second is the name part, and the third is the date string
+	namePart := matches[1]
+	datePart := matches[2]
+
+	return namePart, datePart, nil
 }
 
 func GetStartLocationQr() (string, error) {
@@ -288,10 +331,41 @@ func GetStartLocationQr() (string, error) {
 	return loc, nil
 }
 
+func getActivityLocations() ([]string, error) {
+	var activityDirs []string
+
+	dir, err := GetTextLibraryPath()
+	if err != nil {
+		return nil, err
+	}
+
+	// Regular expression to match the schema "name-dd.mm.yyyy"
+	re := regexp.MustCompile(`^[a-zA-Z0-9\.]+-\d{2}\.\d{2}\.\d{4}$`)
+
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Check if it's a directory and if the name matches the schema
+		if info.IsDir() && re.MatchString(info.Name()) {
+			activityDirs = append(activityDirs, info.Name())
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return activityDirs, nil
+}
+
 func getStartingLocations() ([]string, error) {
 	var epsFiles []string
 
-	dir, err := getTextLibraryPath()
+	dir, err := GetTextLibraryPath()
 	if err != nil {
 		return nil, err
 	}

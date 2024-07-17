@@ -70,6 +70,7 @@ func newMtbCommand() *cobra.Command {
 	cmd.Flags().StringVar(&act.Tb.Restaurant, "restaurant", "", "Names of people who participated")
 	cmd.Flags().StringVarP(&dateStr, "date", "d", "", "Date of the activity in the format 'DD.MM.YYYY'")
 	cmd.Flags().BoolVarP(&act.Meta.StravaSync, "sync", "s", true, "Get activity stats from strava")
+	cmd.Flags().BoolVarP(&act.Meta.StravaGpxSync, "gpx", "g", true, "Get gpx track from strava")
 	cmd.Flags().BoolVarP(&act.Meta.QueryStartLocation, "start-location", "l", true, "Interactive query for starting locations")
 	cmd.Flags().IntVarP(&act.Tb.Rating, "rating", "r", 3, "Rating of the activity in the format '1-5'."+
 		"This will be later displayed as stars")

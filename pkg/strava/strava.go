@@ -20,6 +20,8 @@ const (
 )
 
 type StravaActivity struct {
+	Id          int64
+	SportType   string
 	Name        string
 	Distance    int
 	Ascent      int
@@ -107,11 +109,13 @@ func FetchStravaData(date time.Time) (*StravaActivity, error) {
 
 			return &StravaActivity{
 				Name:        activity.Name,
+				SportType:   normalizeSportType(string(*activity.SportType)),
 				Distance:    normalizeDistance(activity.Distance),
 				StartDate:   activity.StartDate,
 				MovingTime:  normalizeDuration(activity.MovingTime),
 				ElapsedTime: normalizeDuration(activity.ElapsedTime),
 				Ascent:      normalizeDistance(activity.TotalElevationGain),
+				Id:          activitySummary.Id,
 			}, nil
 		}
 	}
@@ -121,6 +125,16 @@ func FetchStravaData(date time.Time) (*StravaActivity, error) {
 
 func normalizeDistance(distance float32) int {
 	return int(distance)
+}
+
+func normalizeSportType(sportType string) string {
+	switch sportType {
+	case "MountainBikeRide":
+		return "mtb"
+	case "GravelRide":
+		return "cyclo"
+	}
+	return sportType
 }
 
 func normalizeDuration(duration int32) time.Duration {
