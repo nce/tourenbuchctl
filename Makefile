@@ -1,5 +1,5 @@
 SWAGGER_FILE_URL=https://developers.strava.com/swagger/swagger.json
-GEN_DIR=./generated
+GEN_DIR=./pkg/stravaapi
 CLIENT_DIR=$(GEN_DIR)/client
 APP_NAME=tourenbuchctl
 
@@ -13,7 +13,7 @@ all: generate build
 generate:
 	@echo "Generating Go client from Swagger definition..."
 	@mkdir -p $(GEN_DIR)
-	@swagger-codegen generate -i $(SWAGGER_FILE_URL) -l go -o ./pkg/stravaapi --additional-properties packageName=stravaapi
+	@docker run --rm -v $$PWD:/tmp:rw swaggerapi/swagger-codegen-cli-v3:3.0.58 generate -i $(SWAGGER_FILE_URL) -l go -o /tmp/$(GEN_DIR) --additional-properties packageName=stravaapi
 
 build: generate
 	@echo "Building the Go application..."

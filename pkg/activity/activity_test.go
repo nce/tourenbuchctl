@@ -37,11 +37,13 @@ func TestSplitDirectoryName(t *testing.T) {
 func TestNormalizeStartTime(t *testing.T) {
 	t.Parallel()
 
+	loc, _ := time.LoadLocation("Europe/Berlin")
+
 	tests := []struct {
 		start    time.Time
 		expected string
 	}{
-		{time.Date(2021, 8, 15, 14, 30, 45, 100, time.Local), "14:30"},
+		{time.Date(2021, 8, 15, 14, 30, 45, 100, loc), "14:30"},
 	}
 
 	for _, tt := range tests {
