@@ -3,6 +3,7 @@ package strava
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -15,12 +16,15 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var ErrStravaQuery = errors.New("querying strava for the activity failed")
+
 const (
+	//nolint:gosec
 	tokenFile = "/tmp/stravatoken.json"
 )
 
-type StravaActivity struct {
-	Id          int64
+type Activity struct {
+	ID          int64
 	SportType   string
 	Name        string
 	Distance    int
@@ -31,23 +35,23 @@ type StravaActivity struct {
 }
 
 func loginStrava() (*http.Client, error) {
-
 	client := &http.Client{}
 
 	token, err := utils.LoadToken(tokenFile)
 	if err == nil && token.Valid() {
 		log.Debug().Msg("Using existing token from tokenfile to query strava")
+
 		client = oauth.StravaOauthConfig.Client(context.Background(), token)
 	} else {
-
 		log.Debug().Msg("Refreshing token from strava")
 		oauth.InitStravaOauthConfig()
 
-		log.Debug().Str("Oauth URL", oauth.StravaOauthConfig.AuthCodeURL(oauth.OauthStateString))
+		log.Debug().Msgf("Oauth URL: %s", oauth.StravaOauthConfig.AuthCodeURL(oauth.OauthStateString))
 
+		//nolint: gosec
 		err := exec.Command("open", oauth.StravaOauthConfig.AuthCodeURL(oauth.OauthStateString)).Start()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("exec open strava url: %w", err)
 		}
 
 		oauth.AuthStrava(tokenFile)
@@ -56,19 +60,20 @@ func loginStrava() (*http.Client, error) {
 
 		if err == nil && token.Valid() {
 			log.Debug().Msg("Using newly acquired token to query strava")
+
 			client = oauth.StravaOauthConfig.Client(context.Background(), token)
 		}
 	}
 
 	return client, nil
-
 }
 
-func FetchStravaData(date time.Time) (*StravaActivity, error) {
+func FetchStravaData(date time.Time) (*Activity, error) {
 	client, err := loginStrava()
 	if err != nil {
 		return nil, err
 	}
+
 	configuration := api.NewConfiguration()
 	configuration.HTTPClient = client
 	apiClient := api.NewAPIClient(configuration)
@@ -77,37 +82,53 @@ func FetchStravaData(date time.Time) (*StravaActivity, error) {
 		Before: optional.NewInt32(int32(date.Add(24 * time.Hour).Unix())),
 		After:  optional.NewInt32(int32(date.Unix())),
 	}
-	allActivites, _, err := apiClient.ActivitiesApi.GetLoggedInAthleteActivities(context.Background(), opts)
 
+	allActivites, response, err := apiClient.ActivitiesApi.GetLoggedInAthleteActivities(context.Background(), opts)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetLoggedInAthleteActivities failed %w", err)
 	}
+
+	// Ensure the response body is closed
+	defer func() {
+		if response != nil && response.Body != nil {
+			response.Body.Close()
+		}
+	}()
 
 	// response from `GetActivityById`: DetailedActivity
 	activityNames := []string{}
 	for _, act := range allActivites {
 		activityNames = append(activityNames, act.Name)
 	}
+
 	log.Debug().Str("Name", strings.Join(activityNames, " ")).Msg("Activities found on strava")
 
 	name, err := utils.FuzzyFind("Select activities to sync", activityNames)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("fuzzy find selected activities to sync: %w", err)
 	}
+
 	log.Debug().Str("Name", name).Msg("Activity selected via fuzzyFind")
 
 	// select the activity called `name`
 	for _, activitySummary := range allActivites {
 		if activitySummary.Name == name {
-
 			// querying for detailedActivity might be unnecessary, as the results
 			// are already in the summary
-			activity, _, err := apiClient.ActivitiesApi.GetActivityById(context.Background(), activitySummary.Id, nil)
+			activity, response, err := apiClient.ActivitiesApi.GetActivityById(context.Background(), activitySummary.Id, nil)
+
+			// Ensure the response body is closed
+			defer func() {
+				if response != nil && response.Body != nil {
+					response.Body.Close()
+				}
+			}()
+
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("getactivitybyId(%d) failed: %w", activitySummary.Id, err)
 			}
 
-			return &StravaActivity{
+			return &Activity{
 				Name:        activity.Name,
 				SportType:   normalizeSportType(string(*activity.SportType)),
 				Distance:    normalizeDistance(activity.Distance),
@@ -115,12 +136,12 @@ func FetchStravaData(date time.Time) (*StravaActivity, error) {
 				MovingTime:  normalizeDuration(activity.MovingTime),
 				ElapsedTime: normalizeDuration(activity.ElapsedTime),
 				Ascent:      normalizeDistance(activity.TotalElevationGain),
-				Id:          activitySummary.Id,
+				ID:          activitySummary.Id,
 			}, nil
 		}
 	}
 
-	return nil, errors.New("Querying strava for the activity failed")
+	return nil, fmt.Errorf("strava %w", ErrStravaQuery)
 }
 
 func normalizeDistance(distance float32) int {
@@ -134,6 +155,7 @@ func normalizeSportType(sportType string) string {
 	case "GravelRide":
 		return "cyclo"
 	}
+
 	return sportType
 }
 

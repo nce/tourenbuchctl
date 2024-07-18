@@ -2,6 +2,7 @@ package oauth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -13,13 +14,16 @@ const (
 	serverTimeout = 1 * time.Minute
 )
 
+var ErrFailedTimeout = errors.New("timeout waiting for callback")
+
 type callbackResult struct {
 	Interface interface{}
 	Error     error
 }
 
-func runCallbackServer(callback func(w http.ResponseWriter, r *http.Request) (interface{}, error)) func() (interface{}, error) {
-
+func runCallbackServer(callback func(w http.ResponseWriter,
+	r *http.Request) (interface{}, error),
+) func() (interface{}, error) {
 	port := authCallbackPort
 	redirectURI := authCallbackPath
 
@@ -27,23 +31,29 @@ func runCallbackServer(callback func(w http.ResponseWriter, r *http.Request) (in
 
 	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
-		fmt.Println(err)
+		return func() (interface{}, error) {
+			return nil, fmt.Errorf("TCP connection initialization: %w", err)
+		}
 	}
 
-	ln, err := net.Listen("tcp", addr.String())
+	listen, err := net.Listen("tcp", addr.String())
 	if err != nil {
-		fmt.Println(err)
+		return func() (interface{}, error) {
+			return nil, fmt.Errorf("TCP server listen initialization: %w", err)
+		}
 	}
-	callbackPort := ln.Addr().(*net.TCPAddr).Port
 
-	m := http.NewServeMux()
+	//nolint: forcetypeassert
+	callbackPort := listen.Addr().(*net.TCPAddr).Port
+
+	mux := http.NewServeMux()
 	server := &http.Server{
 		ReadTimeout: serverTimeout,
-		Handler:     m,
+		Handler:     mux,
 		Addr:        fmt.Sprintf(":%d", callbackPort),
 	}
 
-	m.HandleFunc(redirectURI, func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(redirectURI, func(w http.ResponseWriter, r *http.Request) {
 		// Got a response, call the callback function.
 		i, err := callback(w, r)
 		resultCh <- callbackResult{Interface: i, Error: err}
@@ -51,8 +61,8 @@ func runCallbackServer(callback func(w http.ResponseWriter, r *http.Request) (in
 
 	// Start the server.
 	go func() {
-		err := server.Serve(ln)
-		if err != http.ErrServerClosed {
+		err := server.Serve(listen)
+		if errors.Is(err, http.ErrServerClosed) {
 			resultCh <- callbackResult{Error: err}
 		}
 	}()
@@ -61,24 +71,23 @@ func runCallbackServer(callback func(w http.ResponseWriter, r *http.Request) (in
 		var finalErr error
 
 		// Block till the callback gives us a result.
-		var r callbackResult
+		var result callbackResult
 		select {
-		case r = <-resultCh:
-			finalErr = r.Error
+		case result = <-resultCh:
+			finalErr = result.Error
 		case <-time.After(timeoutDelay):
-			finalErr = error(fmt.Errorf("timeout waiting for callback"))
+			finalErr = fmt.Errorf("failed waiting %w", ErrFailedTimeout)
 		}
 
 		// Shutdown the server.
 		err := server.Shutdown(context.Background())
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("server shutdown: %w", err)
 		}
 
 		// Return the result.
-		return r.Interface, finalErr
+		return result.Interface, finalErr
 	}
 
 	return closeAndReturn
-
 }

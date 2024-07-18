@@ -7,6 +7,8 @@ import (
 )
 
 func TestSplitDirectoryName(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		dir  string
 		name string
@@ -16,20 +18,25 @@ func TestSplitDirectoryName(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("%s dirs", tt.dir), func(t *testing.T) {
+		t.Run(tt.dir+" dirs", func(t *testing.T) {
+			t.Parallel()
+
 			name, date, _ := splitDirectoryName(tt.dir)
+
 			if name != tt.name {
 				t.Errorf("got %s, want %s", name, tt.name)
 			}
+
 			if date != tt.date {
 				t.Errorf("got %s, want %s", date, tt.date)
 			}
-
 		})
 	}
 }
 
 func TestNormalizeStartTime(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		start    time.Time
 		expected string
@@ -39,11 +46,14 @@ func TestNormalizeStartTime(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.expected, func(t *testing.T) {
+			t.Parallel()
+
 			start := Activity{
 				Tb: Tourenbuch{
 					StartTime: tt.start,
 				},
 			}
+
 			result := start.normalizeStartTime()
 			if result != tt.expected {
 				t.Errorf("got %s, want %s", result, tt.expected)
@@ -53,6 +63,8 @@ func TestNormalizeStartTime(t *testing.T) {
 }
 
 func TestNormalizeDistance(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		meters   int
 		expected string
@@ -66,11 +78,14 @@ func TestNormalizeDistance(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%d meters", tt.meters), func(t *testing.T) {
+			t.Parallel()
+
 			distance := Activity{
 				Tb: Tourenbuch{
 					Distance: tt.meters,
 				},
 			}
+
 			result := distance.normalizeDistance()
 			if result != tt.expected {
 				t.Errorf("got %s, want %s", result, tt.expected)
@@ -80,6 +95,8 @@ func TestNormalizeDistance(t *testing.T) {
 }
 
 func TestNormalizeAscent(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		meters   int
 		expected string
@@ -92,11 +109,14 @@ func TestNormalizeAscent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%d meters", tt.meters), func(t *testing.T) {
+			t.Parallel()
+
 			distance := Activity{
 				Tb: Tourenbuch{
 					Ascent: tt.meters,
 				},
 			}
+
 			result := distance.normalizeAscent()
 			if result != tt.expected {
 				t.Errorf("got %s, want %s", result, tt.expected)
@@ -106,6 +126,8 @@ func TestNormalizeAscent(t *testing.T) {
 }
 
 func TestNormalizeDuration(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		seconds  int
 		expected string
@@ -121,7 +143,10 @@ func TestNormalizeDuration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%d seconds", tt.seconds), func(t *testing.T) {
+			t.Parallel()
+
 			result := normalizeDuration(time.Duration(tt.seconds) * time.Second)
+
 			if result != tt.expected {
 				t.Errorf("got %s, want %s", result, tt.expected)
 			}

@@ -1,6 +1,7 @@
 package activity
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,21 +10,20 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/nce/tourenbuchctl/pkg/utils"
 	"github.com/rs/zerolog/log"
-
-	"gopkg.in/yaml.v3"
-
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-
-	"github.com/nce/tourenbuchctl/pkg/utils"
+	"gopkg.in/yaml.v3"
 )
 
-// TODO:  make this configurable via external config file (-> viper)
+// make this configurable via external config file (-> viper).
 const (
 	relativeTextLibraryPath  = "vcs/github/nce/tourenbuch/"
 	relativeAssetLibraryPath = "Library/Mobile Documents/com~apple~CloudDocs/privat/sport/Tourenbuch/"
 )
+
+var ErrTourenbuchDirNameWrong = errors.New("directory name does not match expected schema")
 
 type Meta struct {
 	Category           string
@@ -32,7 +32,7 @@ type Meta struct {
 	AssetLocation      string
 	StravaSync         bool
 	StravaGpxSync      bool
-	StravaId           int64
+	StravaID           int64
 	QueryStartLocation bool
 }
 
@@ -58,13 +58,13 @@ type Activity struct {
 
 // Each Tourenbuch entry is represented by two folders. One folder contains the
 // text part of the activity, the other one contains the assets (images, etc.).
-// Text is stored in git; Assets are stored in iCloud
+// Text is stored in git; Assets are stored in iCloud.
 func (a *Activity) createFolder() error {
-
 	textPath, err := GetTextLibraryPath()
 	if err != nil {
 		return err
 	}
+
 	assetPath, err := GetAssetLibraryPath()
 	if err != nil {
 		return err
@@ -76,9 +76,9 @@ func (a *Activity) createFolder() error {
 	}
 
 	for _, dir := range dirs {
-		err := os.MkdirAll(dir, 0755)
+		err := os.MkdirAll(dir, 0o755)
 		if err != nil {
-			return err
+			return fmt.Errorf("creating new Asset/Lib Dir: %s; error: %w", dir, err)
 		}
 	}
 
@@ -90,18 +90,20 @@ func (a *Activity) createFolder() error {
 
 func (a *Activity) initSkeleton(file string) (string, error) {
 	location := fmt.Sprintf("templates/tourenbuch/%s/%s", a.Meta.Category, file)
+
 	tmpl, err := template.ParseFiles(location)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("parsing template file: %s; error: %w", location, err)
 	}
 
 	textPath, err := GetTextLibraryPath()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("getting Library Path %w", err)
 	}
+
 	assetPath, err := GetAssetLibraryPath()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("getting Asset Path %w", err)
 	}
 
 	data := struct {
@@ -132,30 +134,34 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 		Season:           a.getSeason(),
 	}
 
-	io := new(strings.Builder)
+	newString := new(strings.Builder)
 
 	// Execute the template and write to the file
-	err = tmpl.Execute(io, data)
+	err = tmpl.Execute(newString, data)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("executing TB template: %w", err)
 	}
-	return io.String(), nil
+
+	return newString.String(), nil
 }
 
-// Updates the existing stats-yaml structure with new data
+// Updates the existing stats-yaml structure with new data.
 func (a *Activity) updateActivity(file string) error {
 	yamlFile, err := os.ReadFile(file)
 	if err != nil {
 		log.Error().Str("filename", file).Msg("Error reading file")
-		return err
+
+		return fmt.Errorf("reading file %w", err)
 	}
 
 	// Parse the YAML file into a node tree
 	var root yaml.Node
+
 	err = yaml.Unmarshal(yamlFile, &root)
 	if err != nil {
 		log.Error().Str("filename", file).Msg("Error unmarshalling file")
-		return err
+
+		return fmt.Errorf("unmarshalling file %w", err)
 	}
 
 	// No idea. This is written by AI
@@ -164,7 +170,7 @@ func (a *Activity) updateActivity(file string) error {
 
 	// Navigate to the "stats" node and modify it
 	// Traverse the document to find the "stats" key
-	for i := 0; i < len(root.Content); i++ {
+	for i := range len(root.Content) {
 		if root.Content[i].Kind == yaml.MappingNode {
 			for j := 0; j < len(root.Content[i].Content); j += 2 {
 				keyNode := root.Content[i].Content[j]
@@ -191,7 +197,6 @@ func (a *Activity) updateActivity(file string) error {
 						}
 
 						value.Tag = "!!str"
-
 					}
 				}
 			}
@@ -202,14 +207,17 @@ func (a *Activity) updateActivity(file string) error {
 	output, err := yaml.Marshal(&root)
 	if err != nil {
 		log.Error().Str("filename", file).Msg("Serializing to yaml failed")
-		return err
+
+		return fmt.Errorf("serialzing yaml %w", err)
 	}
 
 	// Write the modified YAML string back to the file
-	err = os.WriteFile(file, output, 0644)
+	//nolint: gosec
+	err = os.WriteFile(file, output, 0o644)
 	if err != nil {
 		log.Error().Str("filename", file).Msg("Writing back to file failed")
-		return err
+
+		return fmt.Errorf("writing to file %w", err)
 	}
 
 	return nil
@@ -228,7 +236,9 @@ func normalizeDuration(d time.Duration) string {
 }
 
 func (a *Activity) normalizeStartTime() string {
-	localTime := a.Tb.StartTime.Local()
+	loc, _ := time.LoadLocation("Europe/Berlin")
+	localTime := a.Tb.StartTime.In(loc)
+
 	return localTime.Format("15:04")
 }
 
@@ -238,11 +248,11 @@ func (a *Activity) normalizeDistance() string {
 
 func (a *Activity) normalizeAscent() string {
 	p := message.NewPrinter(language.German)
+
 	return p.Sprintf("%d", a.Tb.Ascent)
 }
 
 func (a *Activity) normalizeDateWithShortWeekday() string {
-
 	date := a.Tb.Date.Format("02.01.2006")
 
 	// abbrevations for german weekdays
@@ -265,7 +275,7 @@ func (a *Activity) normalizeDateWithShortWeekday() string {
 func GetTextLibraryPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("getting Text Home Path: %w", err)
 	}
 
 	return fmt.Sprintf("%s/%s", home, relativeTextLibraryPath), nil
@@ -274,7 +284,7 @@ func GetTextLibraryPath() (string, error) {
 func GetAssetLibraryPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("getting Library Home Path: %w", err)
 	}
 
 	return fmt.Sprintf("%s/%s", home, relativeAssetLibraryPath), nil
@@ -282,14 +292,15 @@ func GetAssetLibraryPath() (string, error) {
 
 func GetActivityLocation() (string, string, error) {
 	var loc string
+
 	locations, err := getActivityLocations()
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("get activity starting locations: %w", err)
 	}
 
 	loc, err = utils.FuzzyFind("Select Activity to update", locations)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("fuzzy finding activities to update: %w", err)
 	}
 
 	name, date, err := splitDirectoryName(loc)
@@ -302,11 +313,11 @@ func GetActivityLocation() (string, string, error) {
 
 func splitDirectoryName(dirName string) (string, string, error) {
 	// Regular expression to match the schema "name-dd.mm.yyyy"
-	re := regexp.MustCompile(`^([a-zA-Z0-9\.]+)-(\d{2}\.\d{2}\.\d{4})$`)
+	regexPattern := regexp.MustCompile(`^([a-zA-Z0-9\.]+)-(\d{2}\.\d{2}\.\d{4})$`)
 
-	matches := re.FindStringSubmatch(dirName)
+	matches := regexPattern.FindStringSubmatch(dirName)
 	if matches == nil {
-		return "", "", fmt.Errorf("directory name %q does not match the expected schema", dirName)
+		return "", "", fmt.Errorf("directory name %q does not match %w", dirName, ErrTourenbuchDirNameWrong)
 	}
 
 	// The first submatch is the full match, the second is the name part, and the third is the date string
@@ -318,6 +329,7 @@ func splitDirectoryName(dirName string) (string, string, error) {
 
 func GetStartLocationQr() (string, error) {
 	var loc string
+
 	locations, err := getStartingLocations()
 	if err != nil {
 		return "", err
@@ -325,7 +337,7 @@ func GetStartLocationQr() (string, error) {
 
 	loc, err = utils.FuzzyFind("Select starting Location", locations)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("fuzzy finding starting locatin: %w", err)
 	}
 
 	return loc, nil
@@ -336,27 +348,26 @@ func getActivityLocations() ([]string, error) {
 
 	dir, err := GetTextLibraryPath()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting text library path: %s; error: %w", dir, err)
 	}
 
 	// Regular expression to match the schema "name-dd.mm.yyyy"
-	re := regexp.MustCompile(`^[a-zA-Z0-9\.]+-\d{2}\.\d{2}\.\d{4}$`)
+	regexPattern := regexp.MustCompile(`^[a-zA-Z0-9\.]+-\d{2}\.\d{2}\.\d{4}$`)
 
-	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(dir, func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
 		// Check if it's a directory and if the name matches the schema
-		if info.IsDir() && re.MatchString(info.Name()) {
+		if info.IsDir() && regexPattern.MatchString(info.Name()) {
 			activityDirs = append(activityDirs, info.Name())
 		}
 
 		return nil
 	})
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parsing filetree: %w", err)
 	}
 
 	return activityDirs, nil
@@ -369,12 +380,13 @@ func getStartingLocations() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	dir += "/meta/location-qr"
 
 	// Read all existing starting locations
 	files, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("reading dir %s; error: %w", dir, err)
 	}
 
 	// Don't display file ending in the fzf list

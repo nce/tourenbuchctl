@@ -3,6 +3,9 @@ GEN_DIR=./generated
 CLIENT_DIR=$(GEN_DIR)/client
 APP_NAME=tourenbuchctl
 
+# renovate: github=golangci/golangci-lint
+GO_LINT_CI_VERSION := v1.59.1
+
 .PHONY: all clean generate build run
 
 all: generate build
@@ -19,7 +22,33 @@ build: generate
 run: build
 	@./$(APP_NAME)
 
+.PHONY: check
+check: test lint golangci
+
+.PHONY: lint
+lint: golangci
+
+.PHONY: test
+test:
+	@go test -race ./...
+
 clean:
 	@echo "Cleaning up..."
 	@rm -rf $(GEN_DIR)
 	@rm -f $(APP_NAME)
+
+.PHONY: golangci
+golangci:
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@${GO_LINT_CI_VERSION} run ./...
+
+.PHONY: fmt
+fmt:
+	@go fmt ./...
+	@-go run github.com/daixiang0/gci@latest write .
+	@-go run mvdan.cc/gofumpt@latest -l -w .
+	@-go run golang.org/x/tools/cmd/goimports@latest -l -w .
+	@-go run github.com/bombsimon/wsl/v4/cmd...@latest -strict-append -test=true -fix ./...
+	@-go run github.com/catenacyber/perfsprint@latest -fix ./...
+	@-go run github.com/tetafro/godot/cmd/godot@latest -w .
+	# @-go run go run github.com/ssgreg/nlreturn/v2/cmd/nlreturn@latest -fix ./...
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@${GO_LINT_CI_VERSION} run ./... --fix

@@ -2,14 +2,14 @@ package oauth
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/nce/tourenbuchctl/pkg/templates"
 	"github.com/nce/tourenbuchctl/pkg/utils"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
-
 	"golang.org/x/oauth2"
 )
 
@@ -20,18 +20,21 @@ const (
 )
 
 var (
+	//nolint: gochecknoglobals
 	StravaOauthConfig *oauth2.Config
-	OauthStateString  = "random" // This should be a random string for better security
+	//nolint: gochecknoglobals
+	OauthStateString = "random" // This should be a random string for better security
+
+	ErrInvalidOauthState = errors.New("invalid oauth state")
 )
 
 func AuthStrava(tokenFile string) {
-
 	server := runCallbackServer(handleStravaCallback(tokenFile))
+
 	_, err := server()
 	if err != nil {
-		log.Fatalf("error creating client")
+		log.Error().Err(err).Msg("error creating client")
 	}
-
 }
 
 func InitStravaOauthConfig() {
@@ -46,34 +49,33 @@ func InitStravaOauthConfig() {
 		Scopes:      []string{"read,read_all,profile:read_all,activity:read_all"},
 	}
 
-	log.Println(StravaOauthConfig.ClientSecret)
+	log.Debug().Str("clientsecret", StravaOauthConfig.ClientSecret).Send()
 }
 
 func handleStravaCallback(tokenFile string) func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	return func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 		if r.FormValue("state") != OauthStateString {
-
-			log.Println("Invalid oauth state")
+			log.Error().Msg("Invalid oauth state")
 			templates.Render(w, "templates/html/strava-failure.html")
 
 			// insert html error here
-			return nil, fmt.Errorf("foo")
+			return nil, fmt.Errorf("%w: %s", ErrInvalidOauthState, r.FormValue("state"))
 		}
 
 		token, err := StravaOauthConfig.Exchange(context.Background(), r.FormValue("code"))
 		if err != nil {
-			log.Println("Code exchange failed: ", err)
+			log.Error().Err(err).Msg("Code exchange failed")
 			templates.Render(w, "templates/html/strava-failure.html")
-			return nil, fmt.Errorf("bar")
+
+			return nil, fmt.Errorf("code exchange failed: %w", err)
 		}
 
 		templates.Render(w, "templates/html/strava-success.html")
 
 		if err := utils.SaveToken(tokenFile, token); err != nil {
-			log.Println("Failed to save token: ", err)
+			log.Error().Err(err).Msg("Failed to save token")
 		}
 
 		return r.Body, nil
 	}
-
 }
