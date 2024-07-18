@@ -1,0 +1,37 @@
+builds:
+  - binary: tourenbuchctl
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    tags:
+      - netgo
+      - static_build
+    ldflags:
+      - >-
+        -s -w
+archives:
+  - format: tar.xz
+    files:
+      - LICENSE
+
+report_sizes: true
+
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
+gomod:
+  proxy: true
+
+release:
+  prerelease: auto
+
+changelog:
+  use: github-native

@@ -1,0 +1,39 @@
+linters:
+  enable-all: true
+  disable:
+    - depguard
+    - exhaustruct
+    - gomnd # maybe later, feeling cute
+    - mnd
+    - funlen
+    - testpackage
+
+linters-settings:
+  cyclop:
+    # The maximal code complexity to report.
+    # Default: 10
+    max-complexity: 20
+    # The maximal average package complexity.
+    # If it's higher than 0.0 (float) the check is enabled
+    # Default: 0.0
+    package-average: 10.0
+  varnamelen:
+    ignore-names:
+      - tt
+      - tc
+    ignore-decls:
+      - g *gpx.GPX
+      - g gpx.GPX
+      - i int
+      - a ...any
+      - err error
+      - ok bool
+      - id string
+      - sb *strings.Builder
+      - w http.ResponseWriter
+      - rt http.RoundTripper
+      - r *http.Request
+
+issues:
+  exclude-dirs:
+    - pkg/stravaapi
