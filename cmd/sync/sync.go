@@ -13,8 +13,9 @@ func NewSyncCommand() *cobra.Command {
 	var (
 		parsedDate time.Time
 		dateStr    string
-		act        *activity.Activity
 	)
+
+	act := activity.Activity{}
 
 	cmd := &cobra.Command{
 		Use:   "sync",

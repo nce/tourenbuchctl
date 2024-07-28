@@ -46,8 +46,14 @@ func (a *Activity) StravaSync() error {
 		a.Meta.StravaID = stats.ID
 		a.Meta.Category = stats.SportType
 
-		a.Meta.TextLocation = text + a.Meta.Category + "/" + a.Meta.Name + "-" + a.normalizeDate() + "/"
-		a.Meta.AssetLocation = asset + a.Meta.Category + "/" + a.Meta.Name + "-" + a.normalizeDate() + "/"
+		// this is duplicated and should be refactored
+		if a.Meta.Multiday {
+			a.Meta.TextLocation = text + a.Meta.Category + "/" + "multidaytrip/" + a.Meta.Name + "/"
+			a.Meta.AssetLocation = asset + a.Meta.Category + "/" + "multidaytrip/" + a.Meta.Name + "/"
+		} else {
+			a.Meta.TextLocation = text + a.Meta.Category + "/" + a.Meta.Name + "-" + a.normalizeDate() + "/"
+			a.Meta.AssetLocation = asset + a.Meta.Category + "/" + a.Meta.Name + "-" + a.normalizeDate() + "/"
+		}
 
 		if a.Meta.TextLocation == "" {
 			return fmt.Errorf("found empty: %w", ErrTextLocationNotInitialized)

@@ -34,6 +34,7 @@ type Meta struct {
 	StravaGpxSync      bool
 	StravaID           int64
 	QueryStartLocation bool
+	Multiday           bool
 }
 
 type Tourenbuch struct {
@@ -70,9 +71,18 @@ func (a *Activity) createFolder() error {
 		return err
 	}
 
-	dirs := [2]string{
-		textPath + a.Meta.Category + "/" + a.Meta.Name + "-" + a.normalizeDate(),
-		assetPath + a.Meta.Category + "/" + a.Meta.Name + "-" + a.normalizeDate() + "/" + "img",
+	// this is duplicated and should be refactored
+	var dirs [2]string
+	if a.Meta.Multiday {
+		dirs = [2]string{
+			textPath + a.Meta.Category + "/" + "multidaytrip/" + a.Meta.Name,
+			assetPath + a.Meta.Category + "/" + "multidaytrip/" + a.Meta.Name + "/" + "img",
+		}
+	} else {
+		dirs = [2]string{
+			textPath + a.Meta.Category + "/" + a.Meta.Name + "-" + a.normalizeDate(),
+			assetPath + a.Meta.Category + "/" + a.Meta.Name + "-" + a.normalizeDate() + "/" + "img",
+		}
 	}
 
 	for _, dir := range dirs {
