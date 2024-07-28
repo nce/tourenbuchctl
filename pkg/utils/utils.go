@@ -33,7 +33,12 @@ func SaveToken(filename string, token *oauth2.Token) error {
 		Expiry:       token.Expiry,
 	}
 
-	return fmt.Errorf("encoding json: %w", json.NewEncoder(file).Encode(data))
+	err = json.NewEncoder(file).Encode(data)
+	if err != nil {
+		return fmt.Errorf("encoding json: %w", err)
+	}
+
+	return nil
 }
 
 func LoadToken(filename string) (*oauth2.Token, error) {

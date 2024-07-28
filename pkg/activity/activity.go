@@ -10,6 +10,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/nce/tourenbuchctl/pkg/migrate"
 	"github.com/nce/tourenbuchctl/pkg/utils"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/text/language"
@@ -156,7 +157,21 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 }
 
 // Updates the existing stats-yaml structure with new data.
-func (a *Activity) updateActivity(file string) error {
+//
+//gocyclo:ignore
+func (a *Activity) updateActivity(dir string) error {
+	migrated, err := migrate.SplitDescriptionFile(a.Meta.TextLocation)
+	if err != nil {
+		return fmt.Errorf("migration error in %s: %w", a.Meta.TextLocation, err)
+	}
+
+	if migrated {
+		log.Info().Str("filename", a.Meta.TextLocation).
+			Msg("Description split into header.yaml and description.md")
+	}
+
+	file := dir + "header.yaml"
+
 	yamlFile, err := os.ReadFile(file)
 	if err != nil {
 		log.Error().Str("filename", file).Msg("Error reading file")

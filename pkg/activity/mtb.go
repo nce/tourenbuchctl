@@ -59,14 +59,14 @@ func (a *Activity) StravaSync() error {
 			return fmt.Errorf("found empty: %w", ErrTextLocationNotInitialized)
 		}
 
-		err = a.updateActivity(a.Meta.TextLocation + "description.md")
+		err = a.updateActivity(a.Meta.TextLocation)
 		if err != nil {
-			log.Error().Str("filePath", a.Meta.TextLocation+"description.md").Msg("Error updating activity")
+			log.Error().Str("filePath", a.Meta.TextLocation).Msg("Error updating activity")
 
 			return fmt.Errorf("updating activity: %w", err)
 		}
 
-		log.Info().Str("filePath", a.Meta.TextLocation+"description.md").Msg("Updated strava stats in tourenbuch")
+		log.Info().Str("filePath", a.Meta.TextLocation).Msg("Updated strava stats in tourenbuch")
 	}
 
 	if a.Meta.StravaGpxSync {
@@ -98,7 +98,7 @@ func (a *Activity) CreateActivity() error {
 		return fmt.Errorf("error creating folder: %w", err)
 	}
 
-	for _, file := range []string{"description.md", "elevation.plt", "Makefile", "img-even.tex"} {
+	for _, file := range []string{"description.md", "header.yaml", "elevation.plt", "Makefile", "img-even.tex"} {
 		text, err := a.initSkeleton(file)
 		if err != nil {
 			return fmt.Errorf("creating init skelton %w", err)
