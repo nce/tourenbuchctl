@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/nce/tourenbuchctl/cmd"
+	"github.com/nce/tourenbuchctl/pkg/gpx"
 )
 
 func main() {
-	cmd.Execute()
+	gpx.CreateMap()
+	//cmd.Execute()
 }
