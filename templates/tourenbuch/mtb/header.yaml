@@ -1,4 +1,6 @@
 # vim: set filetype=yaml:
+meta:
+  version: v2
 activity:
   mtb: true
   type: mtb

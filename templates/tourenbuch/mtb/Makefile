@@ -27,7 +27,7 @@ elevation.tex: gpxdata.txt
 	gnuplot elevation.plt
 
 description.tex:
-	pandoc $(PANDOCFLAGS) description.md -o $@
+	pandoc $(PANDOCFLAGS) header.yaml description.md -o $@
 
 register:
 # variable assignment is fine; but in ifeq not?!

@@ -1,9 +1,11 @@
 package activity
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -365,7 +367,59 @@ func GetStartLocationQr() (string, error) {
 		return "", fmt.Errorf("fuzzy finding starting locatin: %w", err)
 	}
 
+	if loc == "new" {
+		newLoc, err := generateNewLocationQr()
+		if err != nil {
+			return "", fmt.Errorf("generating new location qr: %w", err)
+		}
+
+		return newLoc, nil
+	}
+
 	return loc, nil
+}
+
+func generateNewLocationQr() (string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	//nolint: forbidigo
+	fmt.Print("Enter new location (47.123, 10.123): ")
+
+	gpsLocation, err := reader.ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("reading gps location: %w", err)
+	}
+
+	gpsLocation = strings.TrimSpace(gpsLocation)
+
+	//nolint: forbidigo
+	fmt.Printf("Enter a name for the location: ")
+
+	filename, err := reader.ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("reading filename: %w", err)
+	}
+
+	filename = strings.TrimSpace(filename)
+
+	dir, err := GetTextLibraryPath()
+	if err != nil {
+		return "", err
+	}
+
+	dir += "/meta/location-qr"
+
+	//nolint: gosec
+	cmd := exec.Command("qrencode", "-t", "EPS", "-o", dir+"/"+filename+".eps", "geo:"+gpsLocation)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("running qrencode: %w", err)
+	}
+
+	log.Info().Str("filename", filename).Str("gpsLocation", gpsLocation).Msg("New QR-location created")
+
+	return filename, nil
 }
 
 func getActivityLocations() ([]string, error) {
