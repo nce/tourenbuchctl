@@ -332,7 +332,7 @@ func GetActivityLocation() (string, string, error) {
 
 	name, date, err := utils.SplitActivityDirectoryName(loc)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("directory name does not match tb pattern name-dd.mm.yyyy: %w", err)
 	}
 
 	return name, date, nil

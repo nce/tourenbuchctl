@@ -9,7 +9,6 @@ import (
 )
 
 func NewGenCommand() *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:   "gen",
 		Short: "generate a pdf from a single activity. This needs to be run from a directory containing the activity",
@@ -20,7 +19,6 @@ func NewGenCommand() *cobra.Command {
 			if err != nil {
 				log.Fatal().Err(err).Msg("Error getting the current working directory")
 			}
-			//path = filepath.Base(path)
 
 			page, err := render.NewPage(path)
 			if err != nil {

@@ -118,7 +118,7 @@ func FuzzyFind(header string, input []string) (string, error) {
 	return selectedLine, nil
 }
 
-// expects only the last part of the path
+// expects only the last part of the path.
 func SplitActivityDirectoryName(dirName string) (string, string, error) {
 	// Regular expression to match the schema "name-dd.mm.yyyy"
 	regexPattern := regexp.MustCompile(`^([a-zA-Z0-9\.]+)-(\d{2}\.\d{2}\.\d{4})$`)
