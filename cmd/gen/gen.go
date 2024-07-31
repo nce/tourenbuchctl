@@ -2,7 +2,6 @@ package gen
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/nce/tourenbuchctl/pkg/render"
 	"github.com/rs/zerolog/log"
@@ -21,7 +20,7 @@ func NewGenCommand() *cobra.Command {
 			if err != nil {
 				log.Fatal().Err(err).Msg("Error getting the current working directory")
 			}
-			path = filepath.Base(path)
+			//path = filepath.Base(path)
 
 			page, err := render.NewPage(path)
 			if err != nil {

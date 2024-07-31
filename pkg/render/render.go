@@ -7,15 +7,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
-
-	"github.com/nce/tourenbuchctl/pkg/utils"
 )
 
 type PageOpts struct {
 	AbsoluteAssetDir string
+	AbsoluteTextDir  string
 	AbsoluteCwd      string
+	RelativeCwd      string
 	TmpDir           string
 	ActivityName     string
 	ActivityDate     string
@@ -56,7 +57,8 @@ func copyFile(src, dst string) error {
 }
 
 func (n *PageOpts) extractGpxData() error {
-	cmd := exec.Command("python3", n.AbsoluteAssetDir, n.AbsoluteAssetDir+n.ActivityCategory+"/"+n.ActivityName+"-"+n.ActivityDate+"/input.gpx")
+	fmt.Println(n.AbsoluteCwd)
+	cmd := exec.Command("python3", n.AbsoluteAssetDir+"/meta/gpxplot.py", n.AbsoluteAssetDir+n.RelativeCwd+"/input.gpx")
 
 	outfile, err := os.Create(n.TmpDir + "/gpxdata.txt")
 	if err != nil {
@@ -73,8 +75,10 @@ func (n *PageOpts) extractGpxData() error {
 	return nil
 }
 
-func generatElevationProfile(tmpDir string) error {
+func (n *PageOpts) generatElevationProfile() error {
+	fmt.Println(n.TmpDir)
 	cmd := exec.Command("gnuplot", "elevation.plt")
+	cmd.Dir = n.AbsoluteTextDir + n.RelativeCwd + "/" + n.TmpDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
@@ -84,7 +88,16 @@ func generatElevationProfile(tmpDir string) error {
 	return nil
 }
 
-func generateLatexDescription() error {
+func (n *PageOpts) generateLatexDescription() error {
+	cmd := exec.Command("pandoc", "--from", "markdown+tex_math_dollars", "--variable=assetdir:"+n.AbsoluteAssetDir+"/"+n.RelativeCwd, "--variable=path:.", "--variable=projectroot:"+n.AbsoluteTextDir, "--template", n.AbsoluteTextDir+"meta/tourenbuch.template", "--metadata-file", n.AbsoluteCwd+"/header.yaml", n.AbsoluteCwd+"/description.md", "--output", n.TmpDir+"/description.tex")
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Fatalf("Failed to generate elevation profile: %v", err)
+	}
+	return nil
 
 }
 
@@ -105,6 +118,7 @@ func getActivityTypeFromHeader() (string, error) {
 	}
 
 	var act activity
+
 	err = yaml.Unmarshal(yamlfile, &act)
 	if nil != err {
 		return "", fmt.Errorf("error unmarshalling yaml: %w", err)
@@ -115,22 +129,11 @@ func getActivityTypeFromHeader() (string, error) {
 
 func NewPage(cwd string) (*PageOpts, error) {
 
-	dir, date, err := utils.SplitActivityDirectoryName(cwd)
-	if err != nil {
-		return nil, fmt.Errorf("error splitting activity directory name: %w", err)
-	}
-
-	category, err := getActivityTypeFromHeader()
-	if err != nil {
-		return nil, fmt.Errorf("error getting activity type from header: %w", err)
-	}
-
 	return &PageOpts{
 		AbsoluteAssetDir: "/Users/nce/Library/Mobile Documents/com~apple~CloudDocs/privat/sport/Tourenbuch/",
+		AbsoluteTextDir:  "/Users/nce/vcs/github/nce/tourenbuch/",
 		AbsoluteCwd:      cwd,
-		ActivityName:     dir,
-		ActivityDate:     date,
-		ActivityCategory: category,
+		RelativeCwd:      strings.TrimPrefix(cwd, "/Users/nce/vcs/github/nce/tourenbuch/"),
 	}, nil
 }
 
@@ -140,7 +143,7 @@ func (n *PageOpts) GenerateSinglePageActivity() error {
 	if err != nil {
 		log.Fatalf("Failed to create temp directory: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	//defer os.RemoveAll(tempDir)
 
 	n.TmpDir = tempDir
 
@@ -152,16 +155,17 @@ func (n *PageOpts) GenerateSinglePageActivity() error {
 		log.Fatalf("Failed to write LaTeX file: %v", err)
 	}
 
-	err = copyFile("description.tex", filepath.Join(tempDir, "description.tex"))
+	err = copyFile("elevation.plt", filepath.Join(tempDir, "elevation.plt"))
 	if err != nil {
 		log.Fatalf("Failed to copy LaTeX file: %v", err)
 	}
 
 	n.extractGpxData()
 	n.generateLatexDescription()
+	n.generatElevationProfile()
 
 	// Step 3: Compile the LaTeX file with pdflatex
-	cmd := exec.Command("pdflatex", "-output-directory", tempDir, latexFilePath)
+	cmd := exec.Command("pdflatex", "-shell-escape", "-output-directory", tempDir, latexFilePath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
