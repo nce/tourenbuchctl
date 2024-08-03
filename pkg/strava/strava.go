@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -127,6 +128,8 @@ func FetchStravaData(date time.Time) (*Activity, error) {
 			if err != nil {
 				return nil, fmt.Errorf("getactivitybyId(%d) failed: %w", activitySummary.Id, err)
 			}
+
+			log.Info().Msg("StravaUrl: https://strava.com/activities/" + strconv.FormatInt(activitySummary.Id, 10))
 
 			return &Activity{
 				Name:        activity.Name,

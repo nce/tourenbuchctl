@@ -98,7 +98,7 @@ func (a *Activity) CreateActivity() error {
 		return fmt.Errorf("error creating folder: %w", err)
 	}
 
-	for _, file := range []string{"description.md", "header.yaml", "elevation.plt", "Makefile", "img-even.tex"} {
+	for _, file := range []string{"description.md", "header.yaml", "elevation.plt"} {
 		text, err := a.initSkeleton(file)
 		if err != nil {
 			return fmt.Errorf("creating init skelton %w", err)

@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/nce/tourenbuchctl/cmd/gen"
+	"github.com/nce/tourenbuchctl/cmd/migrate"
 	newactivity "github.com/nce/tourenbuchctl/cmd/newActivity"
 	"github.com/nce/tourenbuchctl/cmd/sync"
 	"github.com/rs/zerolog"
@@ -45,6 +47,8 @@ func Execute() {
 
 	rootCmd.AddCommand(sync.NewSyncCommand())
 	rootCmd.AddCommand(newactivity.NewNewCommand())
+	rootCmd.AddCommand(gen.NewGenCommand())
+	rootCmd.AddCommand(migrate.NewMigrateCommand())
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal().Err(err).Msg("Error executing root command")
@@ -68,7 +72,14 @@ func initLogging(debug bool) {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	viper.SetConfigFile(".env")
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to get home directory")
+	}
+
+	viper.SetConfigName(".tourenbuchctl")
+	viper.SetConfigType("env")
+	viper.AddConfigPath(home)
 
 	if err := viper.ReadInConfig(); err != nil {
 		var configFileNotFoundError viper.ConfigFileNotFoundError

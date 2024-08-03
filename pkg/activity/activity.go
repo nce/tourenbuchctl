@@ -330,28 +330,12 @@ func GetActivityLocation() (string, string, error) {
 		return "", "", fmt.Errorf("fuzzy finding activities to update: %w", err)
 	}
 
-	name, date, err := splitDirectoryName(loc)
+	name, date, err := utils.SplitActivityDirectoryName(loc)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("directory name does not match tb pattern name-dd.mm.yyyy: %w", err)
 	}
 
 	return name, date, nil
-}
-
-func splitDirectoryName(dirName string) (string, string, error) {
-	// Regular expression to match the schema "name-dd.mm.yyyy"
-	regexPattern := regexp.MustCompile(`^([a-zA-Z0-9\.]+)-(\d{2}\.\d{2}\.\d{4})$`)
-
-	matches := regexPattern.FindStringSubmatch(dirName)
-	if matches == nil {
-		return "", "", fmt.Errorf("directory name %q does not match %w", dirName, ErrTourenbuchDirNameWrong)
-	}
-
-	// The first submatch is the full match, the second is the name part, and the third is the date string
-	namePart := matches[1]
-	datePart := matches[2]
-
-	return namePart, datePart, nil
 }
 
 func GetStartLocationQr() (string, error) {
