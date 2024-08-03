@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type PageOpts struct {
@@ -163,7 +164,11 @@ func (n *PageOpts) GenerateSinglePageActivity() error {
 	if err != nil {
 		log.Fatalf("Failed to create temp directory: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+
+	defer func() {
+		time.Sleep(1 * time.Second) // Sleep for 1 second before removing the directory
+		os.RemoveAll(tempDir)
+	}()
 
 	n.TmpDir = tempDir
 
