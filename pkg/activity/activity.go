@@ -50,6 +50,7 @@ type Tourenbuch struct {
 	Restaurant      string
 	Distance        int
 	Ascent          int
+	MaxHeight       int
 	MovingTime      time.Duration
 	ElapsedTime     time.Duration
 	StartTime       time.Time
