@@ -9,6 +9,8 @@ import (
 )
 
 func NewGenCommand() *cobra.Command {
+	var saveToDisk bool
+
 	cmd := &cobra.Command{
 		Use:   "gen",
 		Short: "generate a pdf from a single activity. This needs to be run from a directory containing the activity",
@@ -20,7 +22,7 @@ func NewGenCommand() *cobra.Command {
 				log.Fatal().Err(err).Msg("Error getting the current working directory")
 			}
 
-			page, err := render.NewPage(path)
+			page, err := render.NewPage(path, saveToDisk)
 			if err != nil {
 				log.Fatal().Err(err).Str("cwd", path).Msg("Error creating a new page")
 			}
@@ -33,7 +35,7 @@ func NewGenCommand() *cobra.Command {
 		},
 	}
 
-	// cmd.Flags().BoolVarP(&act.Meta.StravaSync, "sync", "s", true, "Get activity stats from strava")
+	cmd.Flags().BoolVarP(&saveToDisk, "save", "s", false, "Save the rendered pdf to assetdir on disk")
 
 	return cmd
 }

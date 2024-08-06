@@ -3,12 +3,14 @@ package render
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/nce/tourenbuchctl/pkg/utils"
+	"github.com/rs/zerolog/log"
 )
 
 type PageOpts struct {
@@ -20,6 +22,7 @@ type PageOpts struct {
 	ActivityName     string
 	ActivityDate     string
 	ActivityCategory string
+	SaveToDisk       bool
 }
 
 const (
@@ -109,6 +112,7 @@ func (n *PageOpts) generateLatexDescription() error {
 		"--variable=assetdir:"+n.AbsoluteAssetDir+"/"+n.RelativeCwd,
 		"--variable=path:.",
 		"--variable=projectroot:"+n.AbsoluteTextDir,
+		"--variable=omitPageNumber:true",
 		"--template", n.AbsoluteTextDir+"meta/tourenbuch.template",
 		"--metadata-file", n.AbsoluteCwd+"/header.yaml",
 		n.AbsoluteCwd+"/description.md",
@@ -150,19 +154,27 @@ func (n *PageOpts) generateLatexDescription() error {
 // 	return act.activity.category, nil
 // }
 
-func NewPage(cwd string) (*PageOpts, error) {
+func NewPage(cwd string, saveToDisk bool) (*PageOpts, error) {
+	name, date, err := utils.SplitActivityDirectoryName(filepath.Base(cwd))
+	if err != nil {
+		return nil, fmt.Errorf("failed to split activity directory name: %w", err)
+	}
+
 	return &PageOpts{
 		AbsoluteAssetDir: "/Users/nce/Library/Mobile Documents/com~apple~CloudDocs/privat/sport/Tourenbuch/",
 		AbsoluteTextDir:  "/Users/nce/vcs/github/nce/tourenbuch/",
 		AbsoluteCwd:      cwd,
 		RelativeCwd:      strings.TrimPrefix(cwd, "/Users/nce/vcs/github/nce/tourenbuch/"),
+		SaveToDisk:       saveToDisk,
+		ActivityName:     name,
+		ActivityDate:     date,
 	}, nil
 }
 
 func (n *PageOpts) GenerateSinglePageActivity() error {
 	tempDir, err := os.MkdirTemp(".", "tmp")
 	if err != nil {
-		log.Fatalf("Failed to create temp directory: %v", err)
+		log.Fatal().Err(err).Msg("Failed to create temp directory")
 	}
 
 	defer func() {
@@ -207,6 +219,18 @@ func (n *PageOpts) GenerateSinglePageActivity() error {
 	err = cmd.Run()
 	if err != nil {
 		return fmt.Errorf("failed to generate PDF: %w", err)
+	}
+
+	if n.SaveToDisk {
+		storagePath := n.AbsoluteAssetDir + n.RelativeCwd + "/" +
+			n.ActivityName + "-" + n.ActivityDate + ".pdf"
+
+		err = copyFile(tempDir+"/document.pdf", storagePath)
+		if err != nil {
+			return fmt.Errorf("failed to save PDF to disk: %w", err)
+		}
+
+		log.Info().Str("storage", storagePath).Msg("PDF saved to disk")
 	}
 
 	pdfFilePath := filepath.Join(tempDir, "document.pdf")
