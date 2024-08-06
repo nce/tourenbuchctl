@@ -1,0 +1,35 @@
+meta:
+  version: v2
+activity:
+  wandern: true
+  type: wandern
+  date: {{ .Date }}
+  title: {{ .Title }}
+  pointOfOrigin:
+    name: \framebox{P} xx
+    qr: {{ .StartLocationQr }}
+    region: Allgäu -
+  season: {{ .Season }}{{ .Year }}
+  rating: ${{ range .Stars }}\bigstar~{{ end}}$
+  company:  {{ .Company }}
+  restaurant: {{ .Restaurant }}
+  maxElevation:
+
+stats:
+  ascent:
+  distance:
+  movingTime:
+  overallTime:
+  startTime:
+  summitTime:
+# puls:
+
+layout:
+  headElevationProfile: false
+  # default
+  tableSize: 0.45
+  mapSize: 0.59
+  mapHeight: 22
+  # adjust if excess of space
+  linespread: 1.05
+  elevationProfileRightMargin: 0
