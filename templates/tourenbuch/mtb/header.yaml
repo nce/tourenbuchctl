@@ -12,7 +12,7 @@ activity:
   season: {{ .Season }} {{ .Year }}
   rating: ${{ range .Stars }}\bigstar~{{ end }}$
   company: {{ .Company }}
-  difficulty: {{ .Difficulty }}
+  difficulty: S{{ .Difficulty }}
   restaurant: {{ .Restaurant }}
 
 stats:
@@ -21,10 +21,10 @@ stats:
   movingTime:
   overallTime:
   startTime:
-# puls:
+  #puls:
 
 layout:
-  #headElevationProfile: true
+  headElevationProfile: false
   # default
   tableSize: 0.50
   mapSize: 0.49
