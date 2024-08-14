@@ -30,6 +30,16 @@ func NewMigrateCommand() *cobra.Command {
 					Msg("Description split into header.yaml and description.md")
 			}
 
+			migrated, err = migrate.RemoveObsoleteFiles(path + "/")
+			if err != nil {
+				log.Fatal().Err(err).Str("filename", path).Msg("Migration error")
+			}
+
+			if migrated {
+				log.Info().Str("filename", path).
+					Msg("Removed obsolete files from activity")
+			}
+
 			log.Info().Msg("Activity migrated")
 		},
 	}
