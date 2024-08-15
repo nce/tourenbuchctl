@@ -101,7 +101,7 @@ func (a *Activity) CreateActivity() error {
 	for _, file := range []string{"description.md", "header.yaml", "elevation.plt"} {
 		text, err := a.initSkeleton(file)
 		if err != nil {
-			return fmt.Errorf("creating init skelton %w", err)
+			return fmt.Errorf("creating init skeleton %w", err)
 		}
 
 		file, err := os.Create(a.Meta.TextLocation + "/" + file)
@@ -118,7 +118,7 @@ func (a *Activity) CreateActivity() error {
 
 	err = a.StravaSync()
 	if err != nil {
-		return err
+		return fmt.Errorf("error syncing new activity with strava: %w", err)
 	}
 
 	return nil
