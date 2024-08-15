@@ -46,7 +46,7 @@ func InitStravaOauthConfig() {
 			AuthURL:  "https://www.strava.com/api/v3/oauth/authorize",
 		},
 		RedirectURL: fmt.Sprintf("%s:%d%s", authCallbackURL, authCallbackPort, authCallbackPath),
-		Scopes:      []string{"read,read_all,profile:read_all,activity:read_all"},
+		Scopes:      []string{"read,read_all,profile:read_all,activity:read_all,activity:write"},
 	}
 
 	log.Debug().Str("clientsecret", StravaOauthConfig.ClientSecret).Send()

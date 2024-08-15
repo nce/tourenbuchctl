@@ -69,6 +69,35 @@ func loginStrava() (*http.Client, error) {
 	return client, nil
 }
 
+func updateActivityTypeToMtb(activityID int64, apiClient api.APIClient) error {
+	sportType := api.SportType("MountainBikeRide")
+
+	updateActivity := &api.ActivitiesApiUpdateActivityByIdOpts{
+		Body: optional.NewInterface(api.UpdatableActivity{
+			SportType: &sportType,
+		}),
+	}
+
+	act, response, err := apiClient.ActivitiesApi.UpdateActivityById(
+		context.Background(),
+		activityID,
+		updateActivity)
+
+	defer func() {
+		if response != nil && response.Body != nil {
+			response.Body.Close()
+		}
+	}()
+
+	if err != nil {
+		return fmt.Errorf("updating activity(%d) with MountainBikeRide failed: %w", activityID, err)
+	}
+
+	log.Info().Str("ID", act.Name).Msg("Updated activity on strava to MountainBikeRide")
+
+	return nil
+}
+
 func FetchStravaData(date time.Time) (*Activity, error) {
 	client, err := loginStrava()
 	if err != nil {
@@ -113,7 +142,17 @@ func FetchStravaData(date time.Time) (*Activity, error) {
 
 	// select the activity called `name`
 	for _, activitySummary := range allActivites {
+		// should be reworked at some point; unnecessary calls to api.
+		//nolint: nestif
 		if activitySummary.Name == name {
+			// gear id is current stereo.
+			if *activitySummary.SportType == api.RIDE_SportType && activitySummary.GearId == "b805358" {
+				err := updateActivityTypeToMtb(activitySummary.Id, *apiClient)
+				if err != nil {
+					return nil, fmt.Errorf("updateActivityTypeToMtb(%d) failed: %w", activitySummary.Id, err)
+				}
+			}
+
 			// querying for detailedActivity might be unnecessary, as the results
 			// are already in the summary
 			activity, response, err := apiClient.ActivitiesApi.GetActivityById(context.Background(), activitySummary.Id, nil)
