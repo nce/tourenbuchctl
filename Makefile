@@ -39,7 +39,7 @@ clean:
 
 .PHONY: golangci
 golangci:
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@${GO_LINT_CI_VERSION} run ./...
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@${GO_LINT_CI_VERSION} -c .golangci.yaml run ./...
 
 .PHONY: fmt
 fmt:
