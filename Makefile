@@ -15,7 +15,7 @@ generate:
 	@mkdir -p $(GEN_DIR)
 	@docker run --rm -v $$PWD:/tmp:rw swaggerapi/swagger-codegen-cli:2.4.43 generate -i $(SWAGGER_FILE_URL) -l go -o /tmp/$(GEN_DIR) --additional-properties packageName=stravaapi
 
-build: generate
+build:
 	@echo "Building the Go application..."
 	@go build -o $(APP_NAME) main.go
 

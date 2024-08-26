@@ -45,4 +45,4 @@ go.work.sum
 go.sumapi
 
 # Ignore the swagger files
-pkg/stravaapi
+# pkg/stravaapi
