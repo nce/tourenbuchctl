@@ -46,3 +46,4 @@ go.sumapi
 
 # Ignore the swagger files
 # pkg/stravaapi
+docs/samplepage.jpg
