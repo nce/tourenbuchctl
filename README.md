@@ -22,7 +22,7 @@ See the example of an activity page below:
 
 # :mountain_bicyclist: Usage
 
-## New Single Day activity
+### New Single Day activity
 ```sh
 tourenbuchctl new mtb <directory.name> -d <dd.mm.YYYY> -t "<activity.title>"
 ```
