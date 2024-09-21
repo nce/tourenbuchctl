@@ -11,7 +11,6 @@ package stravaapi
 
 import (
 	"context"
-
 	"io/ioutil"
 	"net/http"
 	"net/url"
