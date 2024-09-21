@@ -2,6 +2,7 @@ package activity
 
 import (
 	"bufio"
+	"embed"
 	"errors"
 	"fmt"
 	"os"
@@ -25,6 +26,9 @@ const (
 	relativeTextLibraryPath  = "vcs/github/nce/tourenbuch/"
 	relativeAssetLibraryPath = "Library/Mobile Documents/com~apple~CloudDocs/privat/sport/Tourenbuch/"
 )
+
+//go:embed templates/*
+var content embed.FS
 
 var ErrTourenbuchDirNameWrong = errors.New("directory name does not match expected schema")
 
@@ -105,7 +109,7 @@ func (a *Activity) createFolder() error {
 func (a *Activity) initSkeleton(file string) (string, error) {
 	location := fmt.Sprintf("templates/tourenbuch/%s/%s", a.Meta.Category, file)
 
-	tmpl, err := template.ParseFiles(location)
+	tmpl, err := template.ParseFS(content, location)
 	if err != nil {
 		return "", fmt.Errorf("parsing template file: %s; error: %w", location, err)
 	}
