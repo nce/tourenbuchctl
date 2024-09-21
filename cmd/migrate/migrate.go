@@ -12,7 +12,8 @@ func NewMigrateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "migrate",
 		Short: "migrate the old activity format to the newest one",
-		Long:  "parses the current state of the activity and migrates it to the current format",
+		Long: "parses the current state of the activity and migrates it to the current format." +
+			" It should be run from an activity directory.",
 		//nolint: revive
 		Run: func(cmd *cobra.Command, args []string) {
 			path, err := os.Getwd()
@@ -38,6 +39,26 @@ func NewMigrateCommand() *cobra.Command {
 			if migrated {
 				log.Info().Str("filename", path).
 					Msg("Removed obsolete files from activity")
+			}
+
+			migrated, err = migrate.SplitImagesIncludeInOwnFile(path + "/")
+			if err != nil {
+				log.Fatal().Err(err).Str("filename", path).Msg("Migration error")
+			}
+
+			if migrated {
+				log.Info().Str("filename", path).
+					Msg("Moved latex image includes in own file")
+			}
+
+			migrated, err = migrate.InsertOrUpdateVersion(path+"/", "v2")
+			if err != nil {
+				log.Fatal().Err(err).Str("filename", path).Msg("Migration error")
+			}
+
+			if migrated {
+				log.Info().Str("filename", path).
+					Msg("Updated or Inserted Version")
 			}
 
 			log.Info().Msg("Activity migrated")
