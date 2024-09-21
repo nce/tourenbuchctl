@@ -25,10 +25,8 @@ stats:
 
 layout:
   headElevationProfile: false
-  # default
   tableSize: 0.50
   mapSize: 0.49
   mapHeight: 17
-  # adjust if excess of space
   linespread: 1.05
   elevationProfileRightMargin: 0
