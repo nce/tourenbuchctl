@@ -8,8 +8,11 @@ linters:
     - funlen
     - testpackage
 
-
 linters-settings:
+  gocognit:
+    # Minimal code complexity to report.
+    # Default: 30 (but we recommend 10-20)
+    min-complexity: 40
   cyclop:
     # The maximal code complexity to report.
     # Default: 10

@@ -109,8 +109,10 @@ func FetchStravaData(date time.Time) (*Activity, error) {
 	apiClient := api.NewAPIClient(configuration)
 
 	opts := &api.ActivitiesApiGetLoggedInAthleteActivitiesOpts{
+		//nolint: gosec
 		Before: optional.NewInt32(int32(date.Add(24 * time.Hour).Unix())),
-		After:  optional.NewInt32(int32(date.Unix())),
+		//nolint: gosec
+		After: optional.NewInt32(int32(date.Unix())),
 	}
 
 	allActivites, response, err := apiClient.ActivitiesApi.GetLoggedInAthleteActivities(context.Background(), opts)

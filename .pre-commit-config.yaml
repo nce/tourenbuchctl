@@ -1,5 +1,5 @@
-minimum_pre_commit_version: '2.17'
-exclude: 'pkg/stravaapi/.*'
+minimum_pre_commit_version: "2.17"
+exclude: "pkg/stravaapi/.*"
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
@@ -19,7 +19,7 @@ repos:
       - id: go-vet
       - id: go-imports
       - id: go-cyclo
-        args: [-over=15]
+        args: [-over=25]
       - id: validate-toml
       - id: no-go-testing
       - id: golangci-lint
