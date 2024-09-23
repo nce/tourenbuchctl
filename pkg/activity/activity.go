@@ -107,7 +107,7 @@ func (a *Activity) createFolder() error {
 }
 
 func (a *Activity) initSkeleton(file string) (string, error) {
-	location := fmt.Sprintf("templates/tourenbuch/%s/%s", a.Meta.Category, file)
+	location := fmt.Sprintf("templates/%s/%s", a.Meta.Category, file)
 
 	tmpl, err := template.ParseFS(content, location)
 	if err != nil {
