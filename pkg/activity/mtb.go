@@ -98,10 +98,10 @@ func (a *Activity) CreateActivity() error {
 		return fmt.Errorf("error creating folder: %w", err)
 	}
 
-	for _, file := range []string{"description.md", "header.yaml", "elevation.plt"} {
+	for _, file := range []string{"description.md", "header.yaml", "elevation.plt", "images.tex"} {
 		text, err := a.initSkeleton(file)
 		if err != nil {
-			return fmt.Errorf("creating init skeleton %w", err)
+			return fmt.Errorf("creating init skeleton: %w", err)
 		}
 
 		file, err := os.Create(a.Meta.TextLocation + "/" + file)
