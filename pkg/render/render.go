@@ -1,12 +1,14 @@
 package render
 
 import (
+	"embed"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/nce/tourenbuchctl/pkg/utils"
@@ -14,15 +16,16 @@ import (
 )
 
 type PageOpts struct {
-	AbsoluteAssetDir string
-	AbsoluteTextDir  string
-	AbsoluteCwd      string
-	RelativeCwd      string
-	TmpDir           string
-	ActivityName     string
-	ActivityDate     string
-	ActivityCategory string
-	SaveToDisk       bool
+	AbsoluteAssetDir     string
+	AbsoluteTextDir      string
+	AbsoluteCwd          string
+	RelativeCwd          string
+	TmpDir               string
+	ActivityName         string
+	ActivityDate         string
+	ActivityType         string
+	ElevationProfileType string
+	SaveToDisk           bool
 }
 
 const (
@@ -36,6 +39,9 @@ const latexContent = `
 \include{description.tex}
 \end{document}
 `
+
+//go:embed templates/*
+var content embed.FS
 
 func copyFile(src, dst string) error {
 	input, err := os.Open(src)
@@ -87,10 +93,67 @@ func (n *PageOpts) extractGpxData() error {
 	return nil
 }
 
+func (n *PageOpts) prepareElevationProfile() error {
+	absoluteTempDir := n.AbsoluteTextDir + n.RelativeCwd + "/" + n.TmpDir + "/"
+
+	err := copyFile("elevation.plt", filepath.Join(n.TmpDir, "elevation.plt"))
+	if err != nil {
+		return fmt.Errorf("failed to copy Elevation label file: %w", err)
+	}
+
+	settingsLocation := "templates/elevationprofile/activity-settings.plt"
+
+	tmpl, err := template.ParseFS(content, settingsLocation)
+	if err != nil {
+		return fmt.Errorf("parsing template file: %s; error: %w", settingsLocation, err)
+	}
+
+	file, err := os.Create(absoluteTempDir + "activity-settings.plt")
+	if err != nil {
+		return fmt.Errorf("creating output file: %w", err)
+	}
+	defer file.Close()
+
+	err = tmpl.Execute(file, nil)
+	if err != nil {
+		return fmt.Errorf("writing template to file: %w", err)
+	}
+
+	elevationProfile := fmt.Sprintf("templates/elevationprofile/%s.plt", n.ElevationProfileType)
+
+	tmpl, err = template.ParseFS(content, elevationProfile)
+	if err != nil {
+		return fmt.Errorf("parsing template file: %s; error: %w", elevationProfile, err)
+	}
+
+	file, err = os.Create(absoluteTempDir + "master.plt")
+	if err != nil {
+		return fmt.Errorf("creating output file: %w", err)
+	}
+	defer file.Close()
+
+	data := struct {
+		Activity string
+	}{
+		Activity: n.ActivityType,
+	}
+
+	err = tmpl.Execute(file, data)
+	if err != nil {
+		return fmt.Errorf("writing template to file: %w", err)
+	}
+
+	return nil
+}
+
 func (n *PageOpts) generatElevationProfile() error {
+	if err := n.prepareElevationProfile(); err != nil {
+		return fmt.Errorf("failed to prepare elevation profile: %w", err)
+	}
+
 	cmd := exec.Command(
 		"gnuplot",
-		"elevation.plt")
+		"master.plt")
 
 	cmd.Dir = n.AbsoluteTextDir + n.RelativeCwd + "/" + n.TmpDir
 	cmd.Stdout = os.Stdout
@@ -129,45 +192,32 @@ func (n *PageOpts) generateLatexDescription() error {
 	return nil
 }
 
-// type category struct {
-// 	category string `yaml:"type"`
-// }
-//
-// type activity struct {
-// 	activity category `yaml:"activity"`
-// }
-// func getActivityTypeFromHeader() (string, error) {
-// 	headerFile := "header.yaml"
-//
-// 	yamlfile, err := os.ReadFile(headerFile)
-// 	if err != nil {
-// 		return "", fmt.Errorf("error reading file: %w", err)
-// 	}
-//
-// 	var act activity
-//
-// 	err = yaml.Unmarshal(yamlfile, &act)
-// 	if nil != err {
-// 		return "", fmt.Errorf("error unmarshalling yaml: %w", err)
-// 	}
-//
-// 	return act.activity.category, nil
-// }
-
 func NewPage(cwd string, saveToDisk bool) (*PageOpts, error) {
 	name, date, err := utils.SplitActivityDirectoryName(filepath.Base(cwd))
 	if err != nil {
 		return nil, fmt.Errorf("failed to split activity directory name: %w", err)
 	}
 
+	activityType, err := utils.ReadActivityTypeFromHeader(cwd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read activity type: %w", err)
+	}
+
+	elevationProfileType, err := utils.ReadElevationProfileTypeFromHeader(cwd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read activity type: %w", err)
+	}
+
 	return &PageOpts{
-		AbsoluteAssetDir: "/Users/nce/Library/Mobile Documents/com~apple~CloudDocs/privat/sport/Tourenbuch/",
-		AbsoluteTextDir:  "/Users/nce/vcs/github/nce/tourenbuch/",
-		AbsoluteCwd:      cwd,
-		RelativeCwd:      strings.TrimPrefix(cwd, "/Users/nce/vcs/github/nce/tourenbuch/"),
-		SaveToDisk:       saveToDisk,
-		ActivityName:     name,
-		ActivityDate:     date,
+		AbsoluteAssetDir:     "/Users/nce/Library/Mobile Documents/com~apple~CloudDocs/privat/sport/Tourenbuch/",
+		AbsoluteTextDir:      "/Users/nce/vcs/github/nce/tourenbuch/",
+		AbsoluteCwd:          cwd,
+		RelativeCwd:          strings.TrimPrefix(cwd, "/Users/nce/vcs/github/nce/tourenbuch/"),
+		SaveToDisk:           saveToDisk,
+		ActivityName:         name,
+		ActivityDate:         date,
+		ActivityType:         activityType,
+		ElevationProfileType: elevationProfileType,
 	}, nil
 }
 
@@ -192,11 +242,6 @@ func (n *PageOpts) GenerateSinglePageActivity() error {
 		return fmt.Errorf("failed to write LaTeX file: %w", err)
 	}
 
-	err = copyFile("elevation.plt", filepath.Join(tempDir, "elevation.plt"))
-	if err != nil {
-		return fmt.Errorf("failed to copy LaTeX file: %w", err)
-	}
-
 	if err = n.extractGpxData(); err != nil {
 		return fmt.Errorf("failed to extract gpx data: %w", err)
 	}
@@ -210,7 +255,8 @@ func (n *PageOpts) GenerateSinglePageActivity() error {
 	}
 
 	cmd := exec.Command(
-		"pdflatex", "-shell-escape",
+		"pdflatex",
+		"-shell-escape",
 		"-output-directory", tempDir, latexFilePath)
 
 	cmd.Stdout = os.Stdout
