@@ -21,6 +21,7 @@ func NewMigrateCommand() *cobra.Command {
 				log.Fatal().Err(err).Msg("Error getting the current working directory")
 			}
 
+			// v2
 			migrated, err := migrate.SplitDescriptionFile(path + "/")
 			if err != nil {
 				log.Fatal().Err(err).Str("filename", path).Msg("migration error")
@@ -41,6 +42,7 @@ func NewMigrateCommand() *cobra.Command {
 					Msg("Removed obsolete files from activity")
 			}
 
+			// v2
 			migrated, err = migrate.SplitImagesIncludeInOwnFile(path + "/")
 			if err != nil {
 				log.Fatal().Err(err).Str("filename", path).Msg("Migration error")
@@ -51,7 +53,18 @@ func NewMigrateCommand() *cobra.Command {
 					Msg("Moved latex image includes in own file")
 			}
 
-			migrated, err = migrate.InsertOrUpdateVersion(path+"/", "v2")
+			// v3
+			migrated, err = migrate.ReduceElevationProfileToLabels(path + "/")
+			if err != nil {
+				log.Fatal().Err(err).Str("filename", path).Msg("Migration error")
+			}
+
+			if migrated {
+				log.Info().Str("dirname", path).
+					Msg("Removed all gnuplot elevation data from actifity")
+			}
+
+			migrated, err = migrate.InsertOrUpdateVersion(path+"/", "v3")
 			if err != nil {
 				log.Fatal().Err(err).Str("filename", path).Msg("Migration error")
 			}
