@@ -9,7 +9,7 @@ activity:
     name: \framebox{P} xx
     qr: {{ .StartLocationQr }}
     region: Allgäu -
-  season: {{ .Season }}{{ .Year }}
+  season: {{ .Season }} {{ .Year }}
   rating: ${{ range .Stars }}\bigstar~{{ end}}$
   company:  {{ .Company }}
   restaurant: {{ .Restaurant }}
@@ -22,7 +22,7 @@ stats:
   overallTime:
   startTime:
   summitTime:
-# puls:
+  # puls:
 
 layout:
   headElevationProfile: false

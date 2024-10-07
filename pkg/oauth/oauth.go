@@ -56,7 +56,7 @@ func handleStravaCallback(tokenFile string) func(w http.ResponseWriter, r *http.
 	return func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 		if r.FormValue("state") != OauthStateString {
 			log.Error().Msg("Invalid oauth state")
-			templates.Render(w, "templates/html/strava-failure.html")
+			templates.HTMLRender(w, "templates/strava-failure.html")
 
 			// insert html error here
 			return nil, fmt.Errorf("%w: %s", ErrInvalidOauthState, r.FormValue("state"))
@@ -65,12 +65,12 @@ func handleStravaCallback(tokenFile string) func(w http.ResponseWriter, r *http.
 		token, err := StravaOauthConfig.Exchange(context.Background(), r.FormValue("code"))
 		if err != nil {
 			log.Error().Err(err).Msg("Code exchange failed")
-			templates.Render(w, "templates/html/strava-failure.html")
+			templates.HTMLRender(w, "templates/strava-failure.html")
 
 			return nil, fmt.Errorf("code exchange failed: %w", err)
 		}
 
-		templates.Render(w, "templates/html/strava-success.html")
+		templates.HTMLRender(w, "templates/strava-success.html")
 
 		if err := utils.SaveToken(tokenFile, token); err != nil {
 			log.Error().Err(err).Msg("Failed to save token")

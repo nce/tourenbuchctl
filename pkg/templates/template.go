@@ -1,12 +1,16 @@
 package templates
 
 import (
+	"embed"
 	"html/template"
 	"net/http"
 )
 
-func Render(w http.ResponseWriter, tmpl string) {
-	render, err := template.ParseFiles(tmpl)
+//go:embed templates/*
+var content embed.FS
+
+func HTMLRender(w http.ResponseWriter, tmpl string) {
+	render, err := template.ParseFS(content, tmpl)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 
