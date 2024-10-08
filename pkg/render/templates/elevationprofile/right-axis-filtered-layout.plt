@@ -11,6 +11,9 @@ myScaleHM = {{ .Activity }}HM
 myTics = {{ .Activity }}Tics
 myColor = {{ .Activity }}Color
 
+title=ARG1
+maxElevation=ARG2
+
 file = 'gpxdata.txt'
 
 reset

@@ -11,6 +11,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/nce/tourenbuchctl/pkg/activity"
 	"github.com/nce/tourenbuchctl/pkg/utils"
 	"github.com/rs/zerolog/log"
 )
@@ -26,6 +27,8 @@ type PageOpts struct {
 	ActivityType         string
 	ElevationProfileType string
 	SaveToDisk           bool
+	MaxElevation         string
+	ActivityTitle        string
 }
 
 const (
@@ -151,9 +154,14 @@ func (n *PageOpts) generatElevationProfile() error {
 		return fmt.Errorf("failed to prepare elevation profile: %w", err)
 	}
 
+	//nolint: gosec
 	cmd := exec.Command(
 		"gnuplot",
-		"master.plt")
+		"-c",
+		"master.plt",
+		n.ActivityTitle,
+		n.MaxElevation,
+	)
 
 	cmd.Dir = n.AbsoluteTextDir + n.RelativeCwd + "/" + n.TmpDir
 	cmd.Stdout = os.Stdout
@@ -198,12 +206,22 @@ func NewPage(cwd string, saveToDisk bool) (*PageOpts, error) {
 		return nil, fmt.Errorf("failed to split activity directory name: %w", err)
 	}
 
-	activityType, err := utils.ReadActivityTypeFromHeader(cwd)
+	activityType, err := activity.GetFromHeader[string](cwd, "Activity.Type")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read activity type: %w", err)
 	}
 
-	elevationProfileType, err := utils.ReadElevationProfileTypeFromHeader(cwd)
+	elevationProfileType, err := activity.GetFromHeader[string](cwd, "Layout.ElevationProfileType")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read elevationProfileType: %w", err)
+	}
+
+	maxElevation, err := activity.GetFromHeader[string](cwd, "Activity.MaxElevation")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read activity type: %w", err)
+	}
+
+	activityTitle, err := activity.GetFromHeader[string](cwd, "Activity.Title")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read activity type: %w", err)
 	}
@@ -218,6 +236,8 @@ func NewPage(cwd string, saveToDisk bool) (*PageOpts, error) {
 		ActivityDate:         date,
 		ActivityType:         activityType,
 		ElevationProfileType: elevationProfileType,
+		MaxElevation:         maxElevation,
+		ActivityTitle:        activityTitle,
 	}, nil
 }
 
