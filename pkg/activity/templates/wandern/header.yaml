@@ -1,5 +1,5 @@
 meta:
-  version: v2
+  version: v3
 activity:
   wandern: true
   type: wandern
@@ -26,8 +26,9 @@ stats:
 
 layout:
   headElevationProfile: false
+  elevationProfileType: left-axis-layout
+  elevationProfileRightMargin: 0
   tableSize: 0.45
   mapSize: 0.59
   mapHeight: 22
   linespread: 1.05
-  elevationProfileRightMargin: 0
