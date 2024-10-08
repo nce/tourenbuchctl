@@ -17,7 +17,7 @@ mtbTics = 200
 mtbKM   = 20
 mtbHM   = 0.235
 
-wandernTics = 100
+wandernTics = 200
 wandernKM   = 44.97   # 17.99cm / 40km
 wandernHM   = 0.255
 
