@@ -53,10 +53,26 @@ func insertElevationProfileType(textDir string) (bool, error) {
 		return false, fmt.Errorf("error unmarshalling YAML: %w", err)
 	}
 
+	var layout string
+
+	activityType, err := activity.GetFromHeader[string](textDir, "Activity.Type")
+	if err != nil {
+		return false, fmt.Errorf("error getting activity type: %w", err)
+	}
+
+	switch activityType {
+	case "skitour":
+		layout = "right-axis-filtered-layout"
+	case "wandern":
+		layout = "right-axis-filtered-layout"
+	case "mtb":
+		layout = "left-axis-layout"
+	}
+
 	// Check if elevationProfile key exists under layout
 	if header.Layout.ElevationProfileType == "" {
 		// If elevationProfile key does not exist, add it
-		header.Layout.ElevationProfileType = "left-axis-layout"
+		header.Layout.ElevationProfileType = layout
 	}
 	// Marshal the updated data back to YAML
 	var enc bytes.Buffer

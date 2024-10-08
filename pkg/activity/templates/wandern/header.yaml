@@ -26,7 +26,7 @@ stats:
 
 layout:
   headElevationProfile: false
-  elevationProfileType: left-axis-layout
+  elevationProfileType: right-axis-filtered-layout
   elevationProfileRightMargin: 0
   tableSize: 0.45
   mapSize: 0.59
