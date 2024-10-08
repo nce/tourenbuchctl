@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,7 +11,6 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
-	"gopkg.in/yaml.v3"
 )
 
 type Token struct {
@@ -34,11 +32,6 @@ type Activity struct {
 type Layout struct {
 	ElevationProfileType string `yaml:"elevationProfileType"`
 }
-
-var (
-	ErrActivityTypeEmpty               = errors.New("Activity.Type is empty")
-	ErrLayoutElevationProfileTypeEmpty = errors.New("Layout.ElevationProfileType is empty")
-)
 
 func SaveToken(filename string, token *oauth2.Token) error {
 	file, err := os.Create(filename)
@@ -153,44 +146,4 @@ func SplitActivityDirectoryName(dirName string) (string, string, error) {
 	datePart := matches[2]
 
 	return namePart, datePart, nil
-}
-
-func ReadActivityTypeFromHeader(dirName string) (string, error) {
-	data, err := os.ReadFile(dirName + "/header.yaml")
-	if err != nil {
-		return "", fmt.Errorf("error reading file: %w", err)
-	}
-
-	var act Header
-
-	err = yaml.Unmarshal(data, &act)
-	if err != nil {
-		return "", fmt.Errorf("error unmarshalling YAML: %w", err)
-	}
-
-	if act.Activity.Type == "" {
-		return "", fmt.Errorf("parsing %s/header.yaml: %w", dirName, ErrActivityTypeEmpty)
-	}
-
-	return act.Activity.Type, nil
-}
-
-func ReadElevationProfileTypeFromHeader(dirName string) (string, error) {
-	data, err := os.ReadFile(dirName + "/header.yaml")
-	if err != nil {
-		return "", fmt.Errorf("error reading file: %w", err)
-	}
-
-	var act Header
-
-	err = yaml.Unmarshal(data, &act)
-	if err != nil {
-		return "", fmt.Errorf("error unmarshalling YAML: %w", err)
-	}
-
-	if act.Layout.ElevationProfileType == "" {
-		return "", fmt.Errorf("parsing %s/header.yaml: %w", dirName, ErrLayoutElevationProfileTypeEmpty)
-	}
-
-	return act.Layout.ElevationProfileType, nil
 }
