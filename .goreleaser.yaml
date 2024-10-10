@@ -6,7 +6,7 @@ builds:
     goarch:
       - amd64
       - arm64
-    mod_timestamp: '{{ .CommitTimestamp }}'
+    mod_timestamp: "{{ .CommitTimestamp }}"
     env:
       - CGO_ENABLED=0
     flags:
@@ -18,9 +18,7 @@ builds:
       - >-
         -s -w
 archives:
-  - format: tar.xz
-    files:
-      - LICENSE
+  - format: binary
 
 report_sizes: true
 
