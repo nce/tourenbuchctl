@@ -14,6 +14,7 @@ func RemoveObsoleteFiles(textDir string) (bool, error) {
 		"gpxdata.txt",
 		"description.aux",
 		"description.tex",
+		"beschreibung.md",
 	}
 
 	for _, filename := range files {

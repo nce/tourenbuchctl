@@ -14,9 +14,15 @@ func SplitDescriptionFile(textDir string) (bool, error) {
 		return false, nil
 	}
 
+	var file *os.File
+
 	file, err := os.Open(textDir + "description.md")
 	if err != nil {
-		return false, fmt.Errorf("error opening file: %w", err)
+		// check if theres a german version of the file
+		file, err = os.Open(textDir + "beschreibung.md")
+		if err != nil {
+			return false, fmt.Errorf("error opening file: %w", err)
+		}
 	}
 	defer file.Close()
 
