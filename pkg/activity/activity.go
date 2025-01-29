@@ -47,7 +47,9 @@ type Tourenbuch struct {
 	Title           string
 	Date            time.Time
 	Rating          int
-	Difficulty      int
+	TrailDifficulty int
+	SkiDifficulty   string
+	AvalancheReport int
 	StartLocationQr string
 	Company         string
 	Restaurant      string
@@ -133,7 +135,10 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 		StartLocationQr  string
 		Title            string
 		Company          string
-		Difficulty       int
+		TrailDifficulty  int
+		SkiDifficulty    string
+		AvalancheReport  int
+		MaxHeight        int
 		Restaurant       string
 		Season           string
 	}{
@@ -146,7 +151,10 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 		StartLocationQr:  a.Tb.StartLocationQr,
 		Title:            a.Tb.Title,
 		Company:          a.Tb.Company,
-		Difficulty:       a.Tb.Difficulty,
+		TrailDifficulty:  a.Tb.TrailDifficulty,
+		SkiDifficulty:    a.Tb.SkiDifficulty,
+		AvalancheReport:  a.Tb.AvalancheReport,
+		MaxHeight:        a.Tb.MaxHeight,
 		Restaurant:       a.Tb.Restaurant,
 		Season:           a.getSeason(),
 	}

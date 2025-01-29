@@ -200,6 +200,8 @@ func normalizeSportType(sportType string) string {
 		return "cyclo"
 	case "Hike":
 		return "wandern"
+	case "BackcountrySki":
+		return "skitour"
 	}
 
 	return sportType
