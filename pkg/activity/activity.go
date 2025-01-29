@@ -10,14 +10,12 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/nce/tourenbuchctl/pkg/utils"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-	"gopkg.in/yaml.v3"
 )
 
 // make this configurable via external config file (-> viper).
@@ -64,192 +62,6 @@ type Tourenbuch struct {
 type Activity struct {
 	Meta Meta
 	Tb   Tourenbuch
-}
-
-// Each Tourenbuch entry is represented by two folders. One folder contains the
-// text part of the activity, the other one contains the assets (images, etc.).
-// Text is stored in git; Assets are stored in iCloud.
-func (a *Activity) createFolder() error {
-	textPath, err := GetTextLibraryPath()
-	if err != nil {
-		return err
-	}
-
-	assetPath, err := GetAssetLibraryPath()
-	if err != nil {
-		return err
-	}
-
-	// this is duplicated and should be refactored
-	var dirs [2]string
-	if a.Meta.Multiday {
-		dirs = [2]string{
-			textPath + a.Meta.Category + "/" + "multidaytrip/" + a.Meta.Name,
-			assetPath + a.Meta.Category + "/" + "multidaytrip/" + a.Meta.Name + "/" + "img",
-		}
-	} else {
-		dirs = [2]string{
-			textPath + a.Meta.Category + "/" + a.Meta.Name + "-" + a.normalizeDate(),
-			assetPath + a.Meta.Category + "/" + a.Meta.Name + "-" + a.normalizeDate() + "/" + "img",
-		}
-	}
-
-	for _, dir := range dirs {
-		err := os.MkdirAll(dir, 0o755)
-		if err != nil {
-			return fmt.Errorf("creating new Asset/Lib Dir: %s; error: %w", dir, err)
-		}
-	}
-
-	a.Meta.TextLocation = dirs[0]
-	a.Meta.AssetLocation = dirs[1]
-
-	return nil
-}
-
-func (a *Activity) initSkeleton(file string) (string, error) {
-	location := fmt.Sprintf("templates/%s/%s", a.Meta.Category, file)
-
-	tmpl, err := template.ParseFS(content, location)
-	if err != nil {
-		return "", fmt.Errorf("parsing template file: %s; error: %w", location, err)
-	}
-
-	textPath, err := GetTextLibraryPath()
-	if err != nil {
-		return "", fmt.Errorf("getting Library Path %w", err)
-	}
-
-	assetPath, err := GetAssetLibraryPath()
-	if err != nil {
-		return "", fmt.Errorf("getting Asset Path %w", err)
-	}
-
-	data := struct {
-		Name             string
-		Date             string
-		Stars            []struct{}
-		Year             string
-		AssetLibraryPath string
-		TextLibraryPath  string
-		StartLocationQr  string
-		Title            string
-		Company          string
-		TrailDifficulty  int
-		SkiDifficulty    string
-		AvalancheReport  int
-		MaxHeight        int
-		Restaurant       string
-		Season           string
-	}{
-		Name:             a.Meta.Name,
-		Date:             a.normalizeDateWithShortWeekday(),
-		Stars:            make([]struct{}, a.Tb.Rating),
-		Year:             a.normalizeDateWithYear(),
-		AssetLibraryPath: assetPath,
-		TextLibraryPath:  textPath,
-		StartLocationQr:  a.Tb.StartLocationQr,
-		Title:            a.Tb.Title,
-		Company:          a.Tb.Company,
-		TrailDifficulty:  a.Tb.TrailDifficulty,
-		SkiDifficulty:    a.Tb.SkiDifficulty,
-		AvalancheReport:  a.Tb.AvalancheReport,
-		MaxHeight:        a.Tb.MaxHeight,
-		Restaurant:       a.Tb.Restaurant,
-		Season:           a.getSeason(),
-	}
-
-	newString := new(strings.Builder)
-
-	// Execute the template and write to the file
-	err = tmpl.Execute(newString, data)
-	if err != nil {
-		return "", fmt.Errorf("executing TB template: %w", err)
-	}
-
-	return newString.String(), nil
-}
-
-// Updates the existing stats-yaml structure with new data.
-//
-//gocyclo:ignore
-func (a *Activity) updateActivity(dir string) error {
-	file := dir + "header.yaml"
-
-	yamlFile, err := os.ReadFile(file)
-	if err != nil {
-		log.Error().Str("filename", file).Msg("Error reading file")
-
-		return fmt.Errorf("reading file %w", err)
-	}
-
-	// Parse the YAML file into a node tree
-	var root yaml.Node
-
-	err = yaml.Unmarshal(yamlFile, &root)
-	if err != nil {
-		log.Error().Str("filename", file).Msg("Error unmarshalling file")
-
-		return fmt.Errorf("unmarshalling file %w", err)
-	}
-
-	// No idea. This is written by AI
-	// This modifies just one nested Yaml Node, without touching/killing the
-	// rest of the file. It updates the statistic data (distance/ascent) of the activity
-
-	// Navigate to the "stats" node and modify it
-	// Traverse the document to find the "stats" key
-	for i := range len(root.Content) {
-		if root.Content[i].Kind == yaml.MappingNode {
-			for j := 0; j < len(root.Content[i].Content); j += 2 {
-				keyNode := root.Content[i].Content[j]
-				valueNode := root.Content[i].Content[j+1]
-
-				if keyNode.Value == "stats" {
-					// Modify the stats node
-					// Example: Modify a specific key-value pair within the "stats" node
-					for k := 0; k < len(valueNode.Content); k += 2 {
-						keyNode := valueNode.Content[k]
-						value := valueNode.Content[k+1]
-
-						switch keyNode.Value {
-						case "ascent":
-							value.Value = a.normalizeAscent()
-						case "distance":
-							value.Value = a.normalizeDistance()
-						case "movingTime":
-							value.Value = normalizeDuration(a.Tb.MovingTime)
-						case "overallTime":
-							value.Value = normalizeDuration(a.Tb.ElapsedTime)
-						case "startTime":
-							value.Value = a.normalizeStartTime()
-						}
-
-						value.Tag = "!!str"
-					}
-				}
-			}
-		}
-	}
-
-	// Serialize the modified node tree back to a YAML string
-	output, err := yaml.Marshal(&root)
-	if err != nil {
-		log.Error().Str("filename", file).Msg("Serializing to yaml failed")
-
-		return fmt.Errorf("serialzing yaml %w", err)
-	}
-
-	// Write the modified YAML string back to the file
-	//nolint: gosec
-	err = os.WriteFile(file, output, 0o644)
-	if err != nil {
-		log.Error().Str("filename", file).Msg("Writing back to file failed")
-
-		return fmt.Errorf("writing to file %w", err)
-	}
-
-	return nil
 }
 
 func (a *Activity) normalizeDate() string {
@@ -350,7 +162,7 @@ func GetStartLocationQr() (string, error) {
 
 	loc, err = utils.FuzzyFind("Select starting Location", locations)
 	if err != nil {
-		return "", fmt.Errorf("fuzzy finding starting locatin: %w", err)
+		return "", fmt.Errorf("fuzzy finding starting location: %w", err)
 	}
 
 	if loc == "new" {
