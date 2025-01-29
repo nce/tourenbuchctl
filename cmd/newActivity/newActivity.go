@@ -32,7 +32,6 @@ func NewNewCommand() *cobra.Command {
 func addActivityFlags(cmd *cobra.Command, act *activity.Activity) {
 	var dateStr string
 	// there is no maxHeight in mtb
-	// cmd.Flags().IntVar(&flags.maxHeight, "height", "h", "Maximium absolute elevation in meter.")
 	cmd.Flags().StringVarP(&act.Tb.Title, "title", "t", "", "Title of the activity")
 	cmd.Flags().StringVarP(&act.Tb.Company, "company", "c", "", "Names of people who participated")
 	cmd.Flags().StringVar(&act.Tb.Restaurant, "restaurant", "", "Name of restaurant/pause location")
@@ -44,7 +43,6 @@ func addActivityFlags(cmd *cobra.Command, act *activity.Activity) {
 		"query for starting locations")
 	cmd.Flags().IntVarP(&act.Tb.Rating, "rating", "r", 3, "Rating of the activity in the format '1-5'."+
 		"This will be later displayed as stars")
-	cmd.Flags().IntVarP(&act.Tb.Difficulty, "difficulty", "y", 3, "Difficulty of trails in S-Scale")
 
 	err := cmd.MarkFlagRequired("date")
 	if err != nil {
@@ -108,6 +106,7 @@ func newMtbCommand() *cobra.Command {
 	}
 
 	addActivityFlags(cmd, &act)
+	cmd.Flags().IntVarP(&act.Tb.TrailDifficulty, "difficulty", "y", 3, "Difficulty of trails in S-Scale")
 
 	return cmd
 }
@@ -136,15 +135,24 @@ func newHikeCommand() *cobra.Command {
 }
 
 func newSkitourCommand() *cobra.Command {
-	newSkitourCmd := &cobra.Command{
-		Use:   "skitour",
+	act := activity.Activity{}
+
+	cmd := &cobra.Command{
+		Use:   "skitour [name]",
 		Short: "Create a new skitour activity in Tourenbuch",
 		Long:  "Create a new skitour activity",
 		//nolint: revive
 		Run: func(cmd *cobra.Command, args []string) {
-			// Default action if no subcommands are specified
+			act.Meta.Name = args[0]
+			act.Meta.Category = "skitour"
+			log.Info().Msg("Creating new hike activity")
+
+			createNewActivity(&act)
 		},
 	}
 
-	return newSkitourCmd
+	addActivityFlags(cmd, &act)
+	cmd.Flags().IntVar(&act.Tb.MaxHeight, "height", 0, "Maximium absolute elevation in meter.")
+
+	return cmd
 }

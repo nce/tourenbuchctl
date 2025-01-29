@@ -1,0 +1,35 @@
+meta:
+  version: v3
+activity:
+  skitour: true
+  type: skitour
+  date: {{ .Date }}
+  title: {{ .Title }}
+  pointOfOrigin:
+    name: \framebox{P}
+    qr: {{ .StartLocationQr }}
+    region: Allgäu -
+  season: {{ .Season }} {{ .Year }}
+  rating: ${{ range .Stars }}\bigstar~{{ end }}$
+  company: {{ .Company }}
+  difficulty: {{ .SkiDifficulty }}
+  restaurant: {{ .Restaurant }}
+  llb: {{ .AvalancheReport }}
+  maxElevation: {{ .MaxHeight }}
+
+stats:
+  ascent:
+  distance:
+  movingTime:
+  overallTime:
+  startTime:
+  summitTime:
+
+layout:
+  headElevationProfile: false
+  elevationProfileType: right-axis-filtered-layout
+  elevationProfileRightMargin: 0
+  tableSize: 0.50
+  mapSize: 0.49
+  mapHeight: 17
+  linespread: 1.05
