@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -111,4 +112,86 @@ func searchField[T any](v interface{}, path string) (T, error) { //nolint:iretur
 	}
 
 	return value, nil
+}
+
+// Updates the existing stats-yaml structure with new data.
+//
+//gocyclo:ignore
+func (a *Activity) updateActivity(dir string) error {
+	file := dir + "header.yaml"
+
+	yamlFile, err := os.ReadFile(file)
+	if err != nil {
+		log.Error().Str("filename", file).Msg("Error reading file")
+
+		return fmt.Errorf("reading file %w", err)
+	}
+
+	// Parse the YAML file into a node tree
+	var root yaml.Node
+
+	err = yaml.Unmarshal(yamlFile, &root)
+	if err != nil {
+		log.Error().Str("filename", file).Msg("Error unmarshalling file")
+
+		return fmt.Errorf("unmarshalling file %w", err)
+	}
+
+	// No idea. This is written by AI
+	// This modifies just one nested Yaml Node, without touching/killing the
+	// rest of the file. It updates the statistic data (distance/ascent) of the activity
+
+	// Navigate to the "stats" node and modify it
+	// Traverse the document to find the "stats" key
+	for i := range len(root.Content) {
+		if root.Content[i].Kind == yaml.MappingNode {
+			for j := 0; j < len(root.Content[i].Content); j += 2 {
+				keyNode := root.Content[i].Content[j]
+				valueNode := root.Content[i].Content[j+1]
+
+				if keyNode.Value == "stats" {
+					// Modify the stats node
+					// Example: Modify a specific key-value pair within the "stats" node
+					for k := 0; k < len(valueNode.Content); k += 2 {
+						keyNode := valueNode.Content[k]
+						value := valueNode.Content[k+1]
+
+						switch keyNode.Value {
+						case "ascent":
+							value.Value = a.normalizeAscent()
+						case "distance":
+							value.Value = a.normalizeDistance()
+						case "movingTime":
+							value.Value = normalizeDuration(a.Tb.MovingTime)
+						case "overallTime":
+							value.Value = normalizeDuration(a.Tb.ElapsedTime)
+						case "startTime":
+							value.Value = a.normalizeStartTime()
+						}
+
+						value.Tag = "!!str"
+					}
+				}
+			}
+		}
+	}
+
+	// Serialize the modified node tree back to a YAML string
+	output, err := yaml.Marshal(&root)
+	if err != nil {
+		log.Error().Str("filename", file).Msg("Serializing to yaml failed")
+
+		return fmt.Errorf("serialzing yaml %w", err)
+	}
+
+	// Write the modified YAML string back to the file
+	//nolint: gosec
+	err = os.WriteFile(file, output, 0o644)
+	if err != nil {
+		log.Error().Str("filename", file).Msg("Writing back to file failed")
+
+		return fmt.Errorf("writing to file %w", err)
+	}
+
+	return nil
 }

@@ -3,7 +3,6 @@ package activity
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/nce/tourenbuchctl/pkg/strava"
 	"github.com/rs/zerolog/log"
@@ -87,38 +86,6 @@ func (a *Activity) StravaSync() error {
 		}
 
 		log.Info().Str("gpxFile", a.Meta.AssetLocation+"input.gpx").Msg("Exported Strava data to GPX")
-	}
-
-	return nil
-}
-
-func (a *Activity) CreateActivity() error {
-	err := a.createFolder()
-	if err != nil {
-		return fmt.Errorf("error creating folder: %w", err)
-	}
-
-	for _, file := range []string{"description.md", "header.yaml", "elevation.plt", "images.tex"} {
-		text, err := a.initSkeleton(file)
-		if err != nil {
-			return fmt.Errorf("creating init skeleton: %w", err)
-		}
-
-		file, err := os.Create(a.Meta.TextLocation + "/" + file)
-		if err != nil {
-			return fmt.Errorf("error creating file: %w", err)
-		}
-		defer file.Close()
-
-		_, err = file.WriteString(text)
-		if err != nil {
-			return fmt.Errorf("error writing file: %w", err)
-		}
-	}
-
-	err = a.StravaSync()
-	if err != nil {
-		return fmt.Errorf("error syncing new activity with strava: %w", err)
 	}
 
 	return nil
