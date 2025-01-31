@@ -16,6 +16,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	//nolint: gochecknoglobals
+	Version = "dev"
+	//nolint: gochecknoglobals
+	Commit = "none"
+	//nolint: gochecknoglobals
+	Date = "unknown"
+)
+
 func newRootCmd() *cobra.Command {
 	var debug bool
 
@@ -28,16 +37,44 @@ func newRootCmd() *cobra.Command {
 			initLogging(debug)
 			initConfig()
 			log.Debug().Msg("Logging initialized")
+			if v, _ := cmd.Flags().GetBool("version"); v {
+				printVersion()
+			}
 		},
 		//nolint: revive
 		Run: func(cmd *cobra.Command, args []string) {
 			// Default action if no subcommands are specified
+			// add usage
 		},
 	}
 
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable logging in debug mode")
+	rootCmd.PersistentFlags().BoolP("version", "v", false, "Print application version")
 
 	return rootCmd
+}
+
+func printVersion() {
+	logger := zerolog.New(os.Stderr).With().Logger()
+	logger.Info().
+		Str("application", Version).
+		Str("commit", Commit).
+		Str("date", Date).
+		Send()
+}
+
+func newVersionCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print application version",
+		Long:  "Print application version and quit",
+		//nolint: revive
+		Run: func(cmd *cobra.Command, args []string) {
+			printVersion()
+		},
+	}
+
+	return cmd
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -49,6 +86,7 @@ func Execute() {
 	rootCmd.AddCommand(newactivity.NewNewCommand())
 	rootCmd.AddCommand(gen.NewGenCommand())
 	rootCmd.AddCommand(migrate.NewMigrateCommand())
+	rootCmd.AddCommand(newVersionCommand())
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal().Err(err).Msg("Error executing root command")
