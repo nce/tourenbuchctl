@@ -5,6 +5,7 @@ APP_NAME=tourenbuchctl
 
 # renovate: github=golangci/golangci-lint
 GO_LINT_CI_VERSION := v1.63.4
+LDFLAGS :="-X main.version=$(shell git describe --tags --always --dirty) -X main.commit=$(shell git rev-parse --short HEAD) -X main.date=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
 .PHONY: all clean generate build run
 
@@ -17,7 +18,7 @@ generate:
 
 build:
 	@echo "Building the Go application..."
-	@go build -o $(APP_NAME) main.go
+	@go build -ldflags $(LDFLAGS) -o $(APP_NAME) main.go
 
 run: build
 	@./$(APP_NAME)
