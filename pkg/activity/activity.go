@@ -53,7 +53,7 @@ type Tourenbuch struct {
 	Restaurant      string
 	Distance        int
 	Ascent          int
-	MaxHeight       int
+	MaxElevation    int
 	MovingTime      time.Duration
 	ElapsedTime     time.Duration
 	StartTime       time.Time
@@ -87,10 +87,10 @@ func (a *Activity) normalizeDistance() string {
 	return fmt.Sprintf("%.1f", float32(a.Tb.Distance)/float32(1000))
 }
 
-func (a *Activity) normalizeAscent() string {
+func normalizeElevation(elevation int) string {
 	p := message.NewPrinter(language.German)
 
-	return p.Sprintf("%d", a.Tb.Ascent)
+	return p.Sprintf("%d", elevation)
 }
 
 func (a *Activity) normalizeDateWithShortWeekday() string {

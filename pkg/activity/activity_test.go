@@ -68,7 +68,7 @@ func TestNormalizeDistance(t *testing.T) {
 	}
 }
 
-func TestNormalizeAscent(t *testing.T) {
+func TestNormalizeElevation(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -85,13 +85,9 @@ func TestNormalizeAscent(t *testing.T) {
 		t.Run(fmt.Sprintf("%d meters", tt.meters), func(t *testing.T) {
 			t.Parallel()
 
-			distance := Activity{
-				Tb: Tourenbuch{
-					Ascent: tt.meters,
-				},
-			}
+			ascent := tt.meters
 
-			result := distance.normalizeAscent()
+			result := normalizeElevation(ascent)
 			if result != tt.expected {
 				t.Errorf("got %s, want %s", result, tt.expected)
 			}

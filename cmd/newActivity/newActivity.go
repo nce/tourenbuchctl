@@ -99,7 +99,7 @@ func newMtbCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			act.Meta.Name = args[0]
 			act.Meta.Category = "mtb"
-			log.Info().Msg("Creating new mtb activity")
+			log.Info().Msgf("Creating new %s activity", act.Meta.Category)
 
 			createNewActivity(&act)
 		},
@@ -123,7 +123,7 @@ func newHikeCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			act.Meta.Name = args[0]
 			act.Meta.Category = "wandern"
-			log.Info().Msg("Creating new hike activity")
+			log.Info().Msgf("Creating new %s activity", act.Meta.Category)
 
 			createNewActivity(&act)
 		},
@@ -145,14 +145,14 @@ func newSkitourCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			act.Meta.Name = args[0]
 			act.Meta.Category = "skitour"
-			log.Info().Msg("Creating new hike activity")
+			log.Info().Msgf("Creating new %s activity", act.Meta.Category)
 
 			createNewActivity(&act)
 		},
 	}
 
 	addActivityFlags(cmd, &act)
-	cmd.Flags().IntVar(&act.Tb.MaxHeight, "height", 0, "Maximium absolute elevation in meter.")
+	cmd.Flags().IntVar(&act.Tb.MaxElevation, "max-elevation", 0, "Maximium absolute elevation in meter.")
 
 	return cmd
 }

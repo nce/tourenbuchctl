@@ -158,7 +158,7 @@ func (a *Activity) updateActivity(dir string) error {
 
 						switch keyNode.Value {
 						case "ascent":
-							value.Value = a.normalizeAscent()
+							value.Value = normalizeElevation(a.Tb.Ascent)
 						case "distance":
 							value.Value = a.normalizeDistance()
 						case "movingTime":
