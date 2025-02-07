@@ -111,7 +111,7 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 		TrailDifficulty  int
 		SkiDifficulty    string
 		AvalancheReport  int
-		MaxHeight        int
+		MaxElevation     string
 		Restaurant       string
 		Season           string
 	}{
@@ -127,7 +127,7 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 		TrailDifficulty:  a.Tb.TrailDifficulty,
 		SkiDifficulty:    a.Tb.SkiDifficulty,
 		AvalancheReport:  a.Tb.AvalancheReport,
-		MaxHeight:        a.Tb.MaxHeight,
+		MaxElevation:     normalizeElevation(a.Tb.MaxElevation),
 		Restaurant:       a.Tb.Restaurant,
 		Season:           a.getSeason(),
 	}

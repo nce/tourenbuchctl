@@ -6,11 +6,10 @@ This is a tool for working with my `tourenbuch`.
 
 `Tourenbuch` is a digital & printed log book of my personal outdoor sports activities.
 Each activity consists of gpx tracks, map, stats, plotted elevation graphs and an
-overall summary.
+overall summaray/description.
 
 This CLI helps me to interact with it. Until i release more information about
 my (private) Tourenbuch, it's  probabaly not useful for anyone.
-
 
 See the example of an activity page below:
 
@@ -20,11 +19,18 @@ See the example of an activity page below:
     </kbd>
 </p>
 
+# :grey_question: How does this work
+I have two directories set up:
+  * ~/tourenbuch (<- a (private) git repository containing my written/text elements)
+  * ~/tourenbuchassets (<- a cloud synced folder containing my images/gpx/asset elements)
+
 # :mountain_bicyclist: Usage
 
 ### New Single Day activity
 ```sh
 tourenbuchctl new mtb <directory.name> -d <dd.mm.YYYY> -t "<activity.title>"
+tourenbuchctl new skitour <directory.name> --max-elevation <1234> -d <dd.mm.YYYY> -t "<activity.title>"
+
 ```
 
 ### New Multiday activity
