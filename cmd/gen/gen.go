@@ -13,6 +13,8 @@ import (
 func NewGenCommand() *cobra.Command {
 	var saveToDisk bool
 
+	var preventCleanup bool
+
 	cmd := &cobra.Command{
 		Use:   "gen",
 		Short: "generate a pdf from a single activity. This needs to be run from a directory containing the activity",
@@ -26,15 +28,17 @@ func NewGenCommand() *cobra.Command {
 
 			spin := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
 			spin.Start()
+
 			page, err := render.NewPage(path, saveToDisk)
 			if err != nil {
 				log.Fatal().Err(err).Str("cwd", path).Msg("Error creating a new page")
 			}
 
-			err = page.GenerateSinglePageActivity()
+			err = page.GenerateSinglePageActivity(preventCleanup)
 			if err != nil {
 				log.Fatal().Err(err).Msg("Rendering the single page failed")
 			}
+
 			spin.Stop()
 			log.Info().Msg("Single Page rendered")
 		},
