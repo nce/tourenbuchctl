@@ -1,6 +1,7 @@
 package render
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"io"
@@ -241,15 +242,19 @@ func NewPage(cwd string, saveToDisk bool) (*PageOpts, error) {
 	}, nil
 }
 
-func (n *PageOpts) GenerateSinglePageActivity() error {
+func (n *PageOpts) GenerateSinglePageActivity(preventCleanup bool) error {
 	tempDir, err := os.MkdirTemp(".", "tmp")
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create temp directory")
 	}
 
 	defer func() {
-		time.Sleep(1 * time.Second) // Sleep for 1 second before removing the directory
-		os.RemoveAll(tempDir)
+		if !preventCleanup {
+			time.Sleep(1 * time.Second) // Sleep for 1 second before removing the directory
+			os.RemoveAll(tempDir)
+		} else {
+			log.Info().Msgf("Asset rendering folder not removed (%s)", tempDir)
+		}
 	}()
 
 	n.TmpDir = tempDir
@@ -279,12 +284,13 @@ func (n *PageOpts) GenerateSinglePageActivity() error {
 		"-shell-escape",
 		"-output-directory", tempDir, latexFilePath)
 
-	cmd.Stdout = os.Stdout
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
 	cmd.Stderr = os.Stderr
 
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("failed to generate PDF: %w", err)
+		return fmt.Errorf("failed to generate PDF: %w\n%s", err, stdout.String())
 	}
 
 	if n.SaveToDisk {
