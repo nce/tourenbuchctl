@@ -2,6 +2,7 @@ package gen
 
 import (
 	"os"
+	"time"
 
 	"github.com/briandowns/spinner"
 	"github.com/nce/tourenbuchctl/pkg/render"

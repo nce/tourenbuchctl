@@ -1,6 +1,7 @@
 package render
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"io"
@@ -279,12 +280,13 @@ func (n *PageOpts) GenerateSinglePageActivity() error {
 		"-shell-escape",
 		"-output-directory", tempDir, latexFilePath)
 
-	cmd.Stdout = os.Stdout
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
 	cmd.Stderr = os.Stderr
 
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("failed to generate PDF: %w", err)
+		return fmt.Errorf("failed to generate PDF: %w\n%s", err, stdout.String())
 	}
 
 	if n.SaveToDisk {
