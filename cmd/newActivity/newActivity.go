@@ -25,6 +25,7 @@ func NewNewCommand() *cobra.Command {
 	newCmd.AddCommand(newMtbCommand())
 	newCmd.AddCommand(newHikeCommand())
 	newCmd.AddCommand(newSkitourCommand())
+	newCmd.AddCommand(newAlpineSkiCommand())
 
 	return newCmd
 }
@@ -107,6 +108,32 @@ func newMtbCommand() *cobra.Command {
 
 	addActivityFlags(cmd, &act)
 	cmd.Flags().IntVarP(&act.Tb.TrailDifficulty, "difficulty", "y", 3, "Difficulty of trails in S-Scale")
+
+	return cmd
+}
+
+func newAlpineSkiCommand() *cobra.Command {
+	act := activity.Activity{}
+
+	cmd := &cobra.Command{
+		Use:   "alpineSki [name]",
+		Short: "Create a new alpine Ski activity in Tourenbuch",
+		Long:  "Create a new alspine Ski activity",
+		Args:  cobra.ExactArgs(1),
+		//nolint: revive
+		Run: func(cmd *cobra.Command, args []string) {
+			act.Meta.Name = args[0]
+			act.Meta.Category = "alpineSki"
+			log.Info().Msgf("Creating new %s activity", act.Meta.Category)
+
+			createNewActivity(&act)
+		},
+	}
+
+	addActivityFlags(cmd, &act)
+	cmd.Flags().IntVar(&act.Tb.AlpineSki.Runs, "runs", 0, "Number of descends")
+	cmd.Flags().IntVar(&act.Tb.AlpineSki.Vertical, "vertical", 0, "Vertical meters skied")
+	cmd.Flags().IntVar(&act.Tb.Distance, "distance", 0, "Kilometers skied")
 
 	return cmd
 }

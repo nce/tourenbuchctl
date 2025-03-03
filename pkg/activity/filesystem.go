@@ -114,6 +114,8 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 		MaxElevation     string
 		Restaurant       string
 		Season           string
+		Runs             int
+		Vertical         string
 	}{
 		Name:             a.Meta.Name,
 		Date:             a.normalizeDateWithShortWeekday(),
@@ -130,6 +132,8 @@ func (a *Activity) initSkeleton(file string) (string, error) {
 		MaxElevation:     normalizeElevation(a.Tb.MaxElevation),
 		Restaurant:       a.Tb.Restaurant,
 		Season:           a.getSeason(),
+		Runs:             a.Tb.AlpineSki.Runs,
+		Vertical:         normalizeElevation(a.Tb.AlpineSki.Vertical),
 	}
 
 	newString := new(strings.Builder)

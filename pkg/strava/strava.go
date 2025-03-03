@@ -33,6 +33,8 @@ type Activity struct {
 	StartDate   time.Time
 	MovingTime  time.Duration
 	ElapsedTime time.Duration
+	Runs        int
+	Vertical    int
 }
 
 func loginStrava() (*http.Client, error) {

@@ -57,6 +57,12 @@ type Tourenbuch struct {
 	MovingTime      time.Duration
 	ElapsedTime     time.Duration
 	StartTime       time.Time
+	AlpineSki       AlpineSki
+}
+
+type AlpineSki struct {
+	Runs     int
+	Vertical int
 }
 
 type Activity struct {

@@ -57,6 +57,8 @@ type Header struct {
 		StartTime   string `yaml:"startTime"`
 		SummitTime  string `yaml:"summitTime"`
 		Puls        string `yaml:"puls,omitempty"`
+		Runs        string `yaml:"runs,omitempty"`
+		Vertical    string `yaml:"vertical,omitempty"`
 	} `yaml:"stats"`
 }
 
@@ -167,6 +169,8 @@ func (a *Activity) updateActivity(dir string) error {
 							value.Value = normalizeDuration(a.Tb.ElapsedTime)
 						case "startTime":
 							value.Value = a.normalizeStartTime()
+						case "vertical":
+							value.Value = normalizeElevation(a.Tb.AlpineSki.Vertical)
 						}
 
 						value.Tag = "!!str"

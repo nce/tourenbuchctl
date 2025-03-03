@@ -1,0 +1,32 @@
+meta:
+  version: v3
+activity:
+  alpineSki: true
+  type: alpineSki
+  date: {{ .Date }}
+  title: {{ .Title }}
+  pointOfOrigin:
+    name: \framebox{H}
+    qr: {{ .StartLocationQr }}
+    region: Allgäu -
+  season: {{ .Season }} {{ .Year }}
+  rating: ${{ range .Stars }}\bigstar~{{ end }}$
+  company: {{ .Company }}
+  restaurant: {{ .Restaurant }}
+  maxElevation: {{ .MaxElevation }}
+
+stats:
+  vertical:
+  distance:
+  overallTime:
+  startTime:
+  runs: {{ .Runs }}
+
+layout:
+  headElevationProfile: false
+  elevationProfileType: right-axis-filtered-layout
+  elevationProfileRightMargin: 0
+  tableSize: 0.50
+  mapSize: 0.49
+  mapHeight: 17
+  linespread: 1.05

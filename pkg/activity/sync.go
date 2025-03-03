@@ -39,6 +39,7 @@ func (a *Activity) StravaSync() error {
 
 		a.Tb.Distance = stats.Distance
 		a.Tb.Ascent = stats.Ascent
+		a.Tb.AlpineSki.Vertical = stats.Ascent
 		a.Tb.StartTime = stats.StartDate
 		a.Tb.ElapsedTime = stats.ElapsedTime
 		a.Tb.MovingTime = stats.MovingTime
