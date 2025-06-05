@@ -9,7 +9,7 @@ Each activity consists of gpx tracks, map, stats, plotted elevation graphs and a
 overall summaray/description.
 
 This CLI helps me to interact with it. Until i release more information about
-my (private) Tourenbuch, it's  probabaly not useful for anyone.
+my (private) Tourenbuch, it's  probably not useful for anyone.
 
 See the example of an activity page below:
 
@@ -20,9 +20,11 @@ See the example of an activity page below:
 </p>
 
 # :grey_question: How does this work
-I have two directories set up:
-  * ~/tourenbuch (<- a (private) git repository containing my written/text elements)
-  * ~/tourenbuchassets (<- a cloud synced folder containing my images/gpx/asset elements)
+I'm using two local folders:
+  * `textdir` (← a (private) git repository containing my written/text elements)
+  * `assetdir` (← a cloud synced folder containing my images/gpx/asset elements)
+
+tbc.
 
 # :mountain_bicyclist: Usage
 
