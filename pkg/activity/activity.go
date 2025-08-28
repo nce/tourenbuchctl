@@ -29,6 +29,24 @@ var content embed.FS
 
 var ErrTourenbuchDirNameWrong = errors.New("directory name does not match expected schema")
 
+type ActivityType struct {
+	Name      string
+	TextPath  string
+	AssetPath string
+}
+
+var ActivityTypes = []ActivityType{
+	{
+		Name:      "mtb",
+		TextPath:  relativeTextLibraryPath + "/mtb",
+		AssetPath: relativeAssetLibraryPath + "/mtb",
+	}, {
+		Name:      "skitour",
+		TextPath:  relativeTextLibraryPath + "/skitour",
+		AssetPath: relativeAssetLibraryPath + "/skitour",
+	},
+}
+
 type Meta struct {
 	Category           string
 	Name               string
@@ -290,4 +308,15 @@ func (a *Activity) getSeason() string {
 	default:
 		return "unknown"
 	}
+}
+
+// checks if a string is the correct name of an activityType
+func ValidActivityType(activity string) bool {
+	for _, validAcitvityType := range ActivityTypes {
+		if activity == validAcitvityType.Name {
+			return true
+		}
+	}
+
+	return false
 }

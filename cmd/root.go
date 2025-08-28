@@ -9,6 +9,7 @@ import (
 	"github.com/nce/tourenbuchctl/cmd/gen"
 	"github.com/nce/tourenbuchctl/cmd/migrate"
 	newactivity "github.com/nce/tourenbuchctl/cmd/newActivity"
+	"github.com/nce/tourenbuchctl/cmd/stats"
 	"github.com/nce/tourenbuchctl/cmd/sync"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -87,6 +88,7 @@ func Execute() {
 	rootCmd.AddCommand(gen.NewGenCommand())
 	rootCmd.AddCommand(migrate.NewMigrateCommand())
 	rootCmd.AddCommand(newVersionCommand())
+	rootCmd.AddCommand(stats.NewStatsCommand())
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal().Err(err).Msg("Error executing root command")
