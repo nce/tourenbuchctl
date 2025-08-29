@@ -2,6 +2,7 @@ package stats
 
 import (
 	"os"
+	"sort"
 
 	md "github.com/nao1215/markdown"
 )
@@ -25,6 +26,10 @@ func printMarkdown(activityCollection []activityData, regionalGrouping bool) {
 				tableContent = append(tableContent, line)
 			}
 		}
+
+		sort.Slice(tableContent, func(i, j int) bool {
+			return tableContent[i][0] < tableContent[j][0]
+		})
 
 		doc = doc.Table(md.TableSet{
 			Header: []string{"Name", "Region", "Ascent", "Distance", "Duration"},
