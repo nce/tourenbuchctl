@@ -13,7 +13,6 @@ import (
 )
 
 func WriteStats(activityTypes string, outputFormat string, regionalGrouping bool) {
-
 	validActivities, err := filterActivityTypes(activityTypes)
 	if err != nil {
 		log.Error().Msgf("Error reading directory contents: %v", err)
@@ -27,23 +26,20 @@ func WriteStats(activityTypes string, outputFormat string, regionalGrouping bool
 	if outputFormat == "md" {
 		printMarkdown(activityCollection, regionalGrouping)
 	}
-
-	return
 }
 
-// filter activity types by string inputs like "mtb" or "mtb, skitour"
+// filter activity types by string inputs like "mtb" or "mtb, skitour".
 func filterActivityTypes(activityTypes string) ([]activity.ActivityType, error) {
 	var validActivityTypes []activity.ActivityType
 
 	if activityTypes == "all" {
+		validActivityTypes = append(validActivityTypes, activity.ActivityTypes...)
 
-		for _, activityType := range activity.ActivityTypes {
-			validActivityTypes = append(validActivityTypes, activityType)
-		}
 		return validActivityTypes, nil
 	}
 
 	unfilteredActivityTypes := strings.Split(strings.ReplaceAll(activityTypes, " ", ""), ",")
+
 	var filteredActivityTypes []activity.ActivityType
 
 	for _, unfilteredActivityType := range unfilteredActivityTypes {
@@ -59,7 +55,7 @@ func filterActivityTypes(activityTypes string) ([]activity.ActivityType, error) 
 	}
 
 	if len(filteredActivityTypes) == 0 {
-		return nil, fmt.Errorf("no valid activity types found")
+		return nil, ErrNoValidActivityTypes
 	}
 
 	return filteredActivityTypes, nil
@@ -76,28 +72,32 @@ type activityData struct {
 
 func gatherActivites(activityTypes []activity.ActivityType) ([]activityData, error) {
 	var skippedActivities int
+
 	var validActivities int
+
 	var activityCollection []activityData
 
 	for _, activityFolder := range activityTypes {
 		folders, err := os.ReadDir(activityFolder.TextPath)
 		if err != nil {
 			log.Error().Str("folder", activityFolder.TextPath).Msg("Error reading directory contents")
+
 			return nil, fmt.Errorf("reading directory %w", err)
 		}
 
 		for _, folder := range folders {
 			if folder.IsDir() {
-
 				if folder.Name() == "multidaytrip" {
 					continue
 				}
 
 				var activityData activityData
+
 				headerPath := filepath.Join(activityFolder.TextPath, folder.Name(), "header.yaml")
 
 				if _, err := os.Stat(headerPath); errors.Is(err, os.ErrNotExist) {
 					skippedActivities++
+
 					continue
 				}
 
@@ -138,6 +138,7 @@ func gatherActivites(activityTypes []activity.ActivityType) ([]activityData, err
 				}
 
 				validActivities++
+
 				activityCollection = append(activityCollection, activityData.normalizeData())
 			}
 		}
@@ -170,6 +171,7 @@ func uniqueRegions(activityCollection []activityData) []Region {
 		if _, ok := seen[activity.Region]; !ok {
 			seen[activity.Region] = 0
 		}
+
 		seen[activity.Region]++
 	}
 

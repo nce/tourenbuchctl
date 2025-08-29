@@ -35,7 +35,8 @@ type ActivityType struct {
 	AssetPath string
 }
 
-// TODO: this needs to be fixed
+// TODO: this needs to be fixed.
+// nolint: gochecknoglobals
 var ActivityTypes = []ActivityType{
 	{
 		Name:      "mtb",
@@ -311,7 +312,7 @@ func (a *Activity) getSeason() string {
 	}
 }
 
-// checks if a string is the correct name of an activityType
+// checks if a string is the correct name of an activityType.
 func ValidActivityType(activity string) bool {
 	for _, validAcitvityType := range ActivityTypes {
 		if activity == validAcitvityType.Name {

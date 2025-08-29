@@ -5,10 +5,10 @@ import (
 	"sort"
 
 	md "github.com/nao1215/markdown"
+	"github.com/rs/zerolog/log"
 )
 
 func printMarkdown(activityCollection []activityData, regionalGrouping bool) {
-
 	doc := md.NewMarkdown(os.Stdout)
 
 	doc = doc.H1("MTB")
@@ -16,6 +16,7 @@ func printMarkdown(activityCollection []activityData, regionalGrouping bool) {
 	regions := uniqueRegions(activityCollection)
 	for _, region := range regions {
 		var tableContent [][]string
+
 		doc = doc.H2(region.Region)
 
 		for _, activity := range activityCollection {
@@ -35,8 +36,10 @@ func printMarkdown(activityCollection []activityData, regionalGrouping bool) {
 			Header: []string{"Name", "Region", "Ascent", "Distance", "Duration"},
 			Rows:   tableContent,
 		})
-
 	}
-	doc.Build()
 
+	err := doc.Build()
+	if err != nil {
+		log.Error().Msgf("Error building markdown output: %v", err)
+	}
 }

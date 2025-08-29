@@ -6,9 +6,10 @@ import (
 )
 
 func NewStatsCommand() *cobra.Command {
-
 	var outputFormat string
+
 	var activityType string
+
 	var regionalGrouping bool
 
 	cmd := &cobra.Command{
@@ -23,7 +24,7 @@ func NewStatsCommand() *cobra.Command {
 
 	cmd.Flags().StringVarP(&outputFormat, "output-format", "o", "md", "the output format (md/csv)")
 	cmd.Flags().BoolVarP(&regionalGrouping, "regional-grouping", "r", false, "group activities by region")
-	cmd.Flags().StringVarP(&activityType, "activity-type", "t", "all", "which type of activites "+
+	cmd.Flags().StringVarP(&activityType, "activity-type", "t", "all", "which type of activities "+
 		"should be parsed")
 
 	return cmd
