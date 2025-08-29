@@ -18,7 +18,7 @@ import (
 	"golang.org/x/text/message"
 )
 
-// make this configurable via external config file (-> viper).
+// TODO:make this configurable via external config file (-> viper).
 const (
 	relativeTextLibraryPath  = "vcs/github/nce/tourenbuch/"
 	relativeAssetLibraryPath = "Library/Mobile Documents/com~apple~CloudDocs/privat/sport/Tourenbuch/"
@@ -35,14 +35,15 @@ type ActivityType struct {
 	AssetPath string
 }
 
+// TODO: this needs to be fixed
 var ActivityTypes = []ActivityType{
 	{
 		Name:      "mtb",
-		TextPath:  relativeTextLibraryPath + "/mtb",
+		TextPath:  "/Users/nce/" + relativeTextLibraryPath + "/mtb",
 		AssetPath: relativeAssetLibraryPath + "/mtb",
 	}, {
 		Name:      "skitour",
-		TextPath:  relativeTextLibraryPath + "/skitour",
+		TextPath:  "/Users/nce/" + relativeTextLibraryPath + "/skitour",
 		AssetPath: relativeAssetLibraryPath + "/skitour",
 	},
 }
