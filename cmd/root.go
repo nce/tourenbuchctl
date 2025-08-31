@@ -11,6 +11,7 @@ import (
 	newactivity "github.com/nce/tourenbuchctl/cmd/newActivity"
 	"github.com/nce/tourenbuchctl/cmd/stats"
 	"github.com/nce/tourenbuchctl/cmd/sync"
+	"github.com/nce/tourenbuchctl/pkg/activity"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -118,13 +119,14 @@ func initConfig() {
 	}
 
 	viper.SetConfigName(".tourenbuchctl")
-	viper.SetConfigType("env")
+	// viper.SetConfigType("env")
+	viper.SetConfigType("yaml")
 	viper.AddConfigPath(home)
 
 	if err := viper.ReadInConfig(); err != nil {
 		var configFileNotFoundError viper.ConfigFileNotFoundError
 		if errors.As(err, &configFileNotFoundError) {
-			log.Fatal().Msg("Config file .env not found")
+			log.Fatal().Msg("Config file ~/.tourenbuchctl not found")
 		} else {
 			log.Fatal().Msg("Parsing config file not possible. The file should contain " +
 				"the following environment variables: STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET")
@@ -133,4 +135,6 @@ func initConfig() {
 
 	log.Debug().Msg("Environment config initialized")
 	viper.AutomaticEnv()
+
+	activity.GetActivityTypes()
 }

@@ -60,27 +60,31 @@ type Header struct {
 	} `yaml:"stats"`
 }
 
-func GetFromHeader[T any](dir string, field string) (T, error) { //nolint:ireturn
-	var zero T
-
+func GetFromHeader[T any](dir string, fields ...string) (map[string]T, error) {
 	data, err := os.ReadFile(dir + "/header.yaml")
 	if err != nil {
-		return zero, fmt.Errorf("error reading file: %w", err)
+		return nil, fmt.Errorf("error reading file: %w", err)
 	}
 
 	var act Header
 
 	err = yaml.Unmarshal(data, &act)
 	if err != nil {
-		return zero, fmt.Errorf("error unmarshalling YAML: %w", err)
+		return nil, fmt.Errorf("error unmarshalling YAML: %w", err)
 	}
 
-	value, err := searchField[T](&act, field)
-	if err != nil {
-		return zero, fmt.Errorf("error searching field: %w", err)
+	results := make(map[string]T, len(fields))
+
+	for _, field := range fields {
+		value, err := searchField[T](&act, field)
+		if err != nil {
+			return nil, fmt.Errorf("error searching field: %w", err)
+		}
+
+		results[field] = value
 	}
 
-	return value, nil
+	return results, nil
 }
 
 func searchField[T any](v interface{}, path string) (T, error) { //nolint:ireturn

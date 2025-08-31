@@ -62,12 +62,14 @@ func filterActivityTypes(activityTypes string) ([]activity.ActivityType, error) 
 }
 
 type activityData struct {
-	Title    string
-	Date     string
-	Region   string
-	Ascent   string
-	Distance string
-	Duration string
+	Title        string
+	Dirname      string
+	Date         string
+	Region       string
+	Ascent       string
+	Distance     string
+	Duration     string
+	Participants string
 }
 
 func gatherActivites(activityTypes []activity.ActivityType) ([]activityData, error) {
@@ -101,41 +103,29 @@ func gatherActivites(activityTypes []activity.ActivityType) ([]activityData, err
 					continue
 				}
 
-				activityData.Title, err = activity.GetFromHeader[string](
-					filepath.Join(activityFolder.TextPath, folder.Name()), "Activity.Title")
+				activityData.Dirname = folder.Name()
+
+				act, err := activity.GetFromHeader[string](
+					filepath.Join(activityFolder.TextPath, folder.Name()),
+					"Activity.Title",
+					"Activity.Date",
+					"Activity.PointOfOrigin.Region",
+					"Activity.Company",
+					"Stats.Ascent",
+					"Stats.Distance",
+					"Stats.OverallTime",
+				)
 				if err != nil {
-					log.Error().Str("folder", headerPath).Msgf("Error reading header content 'name': %v", err)
+					log.Error().Str("folder", headerPath).Msgf("Error reading header content: %v", err)
 				}
 
-				activityData.Date, err = activity.GetFromHeader[string](
-					filepath.Join(activityFolder.TextPath, folder.Name()), "Activity.Date")
-				if err != nil {
-					log.Error().Str("folder", headerPath).Msgf("Error reading header content 'date': %v", err)
-				}
-
-				activityData.Ascent, err = activity.GetFromHeader[string](
-					filepath.Join(activityFolder.TextPath, folder.Name()), "Stats.Ascent")
-				if err != nil {
-					log.Error().Str("folder", headerPath).Msgf("Error reading header content 'stats.ascent': %v", err)
-				}
-
-				activityData.Distance, err = activity.GetFromHeader[string](
-					filepath.Join(activityFolder.TextPath, folder.Name()), "Stats.Distance")
-				if err != nil {
-					log.Error().Str("folder", headerPath).Msgf("Error reading header content 'stats.distance': %v", err)
-				}
-
-				activityData.Duration, err = activity.GetFromHeader[string](
-					filepath.Join(activityFolder.TextPath, folder.Name()), "Stats.OverallTime")
-				if err != nil {
-					log.Error().Str("folder", headerPath).Msgf("Error reading header content 'stats.overallTime': %v", err)
-				}
-
-				activityData.Region, err = activity.GetFromHeader[string](
-					filepath.Join(activityFolder.TextPath, folder.Name()), "Activity.PointOfOrigin.Region")
-				if err != nil {
-					log.Error().Str("folder", headerPath).Msgf("Error reading header content 'activity.PointOfOrigin.region': %v", err)
-				}
+				activityData.Title = act["Activity.Title"]
+				activityData.Date = act["Activity.Date"]
+				activityData.Region = act["Activity.PointOfOrigin.Region"]
+				activityData.Participants = act["Activity.Company"]
+				activityData.Ascent = act["Stats.Ascent"]
+				activityData.Distance = act["Stats.Distance"]
+				activityData.Duration = act["Stats.OverallTime"]
 
 				validActivities++
 

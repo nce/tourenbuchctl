@@ -207,24 +207,10 @@ func NewPage(cwd string, saveToDisk bool) (*PageOpts, error) {
 		return nil, fmt.Errorf("failed to split activity directory name: %w", err)
 	}
 
-	activityType, err := activity.GetFromHeader[string](cwd, "Activity.Type")
+	activity, err := activity.GetFromHeader[string](cwd, "Activity.Type",
+		"Layout.ElevationProfileType", "Activity.MaxElevation", "Activity.Title")
 	if err != nil {
-		return nil, fmt.Errorf("failed to read activity type: %w", err)
-	}
-
-	elevationProfileType, err := activity.GetFromHeader[string](cwd, "Layout.ElevationProfileType")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read elevationProfileType: %w", err)
-	}
-
-	maxElevation, err := activity.GetFromHeader[string](cwd, "Activity.MaxElevation")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read activity type: %w", err)
-	}
-
-	activityTitle, err := activity.GetFromHeader[string](cwd, "Activity.Title")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read activity type: %w", err)
+		return nil, fmt.Errorf("failed to read values from header.yaml: %w", err)
 	}
 
 	return &PageOpts{
@@ -235,10 +221,10 @@ func NewPage(cwd string, saveToDisk bool) (*PageOpts, error) {
 		SaveToDisk:           saveToDisk,
 		ActivityName:         name,
 		ActivityDate:         date,
-		ActivityType:         activityType,
-		ElevationProfileType: elevationProfileType,
-		MaxElevation:         maxElevation,
-		ActivityTitle:        activityTitle,
+		ActivityType:         activity["Activity.Type"],
+		ElevationProfileType: activity["Layout.ElevationProfileType"],
+		MaxElevation:         activity["Activity.MaxElevation"],
+		ActivityTitle:        activity["Activity.Title"],
 	}, nil
 }
 
