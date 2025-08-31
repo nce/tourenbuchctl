@@ -29,26 +29,6 @@ var content embed.FS
 
 var ErrTourenbuchDirNameWrong = errors.New("directory name does not match expected schema")
 
-type ActivityType struct {
-	Name      string
-	TextPath  string
-	AssetPath string
-}
-
-// TODO: this needs to be fixed.
-// nolint: gochecknoglobals
-var ActivityTypes = []ActivityType{
-	{
-		Name:      "mtb",
-		TextPath:  "/Users/nce/" + relativeTextLibraryPath + "/mtb",
-		AssetPath: relativeAssetLibraryPath + "/mtb",
-	}, {
-		Name:      "skitour",
-		TextPath:  "/Users/nce/" + relativeTextLibraryPath + "/skitour",
-		AssetPath: relativeAssetLibraryPath + "/skitour",
-	},
-}
-
 type Meta struct {
 	Category           string
 	Name               string
