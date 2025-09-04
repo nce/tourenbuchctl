@@ -6,7 +6,6 @@
   "labels": [
     "🛠️ dependencies"
   ],
-  "dependencyDashboardApproval": true,
   "postUpdateOptions": [
     "gomodTidy"
   ],
