@@ -1,15 +1,31 @@
 package statistics
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
 	"github.com/nce/tourenbuchctl/pkg/activity"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
+func setupApp(t *testing.T) {
+	t.Helper()
+
+	viper.Set("activities", []string{"mtb", "skitour"})
+	activity.SetupActivityKinds()
+}
+
 func TestFilterActivityKinds(t *testing.T) {
+	setupApp(t)
 	t.Parallel()
+
+	all := viper.AllSettings()
+
+	pretty, _ := json.MarshalIndent(all, "", "  ")
+	log.Info().Msgf("foo: %s", pretty)
 
 	tests := []struct {
 		activityKinds string

@@ -14,8 +14,11 @@ type Kind struct {
 	AssetPath string
 }
 
-func GetActivityKinds() {
+func SetupActivityKinds() {
 	validActivities := viper.GetStringSlice("activities")
+	if len(validActivities) == 0 {
+		log.Fatal().Msg("no valid activities found in configuration")
+	}
 
 	textPath, err := GetTextLibraryPath()
 	if err != nil {
