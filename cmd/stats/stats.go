@@ -1,7 +1,7 @@
 package stats
 
 import (
-	"github.com/nce/tourenbuchctl/pkg/stats"
+	"github.com/nce/tourenbuchctl/pkg/statistics"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +18,7 @@ func NewStatsCommand() *cobra.Command {
 		Long:  "Create a sortable list of activities with properties like length, elevation, duration,...",
 		//nolint: revive
 		Run: func(cmd *cobra.Command, args []string) {
-			stats.WriteStats(activityType, outputFormat, regionalGrouping)
+			statistics.WriteStats(activityType, outputFormat, regionalGrouping)
 		},
 	}
 

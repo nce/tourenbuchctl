@@ -18,7 +18,7 @@ import (
 	"golang.org/x/text/message"
 )
 
-// TODO:make this configurable via external config file (-> viper).
+// make this configurable via external config file (-> viper).
 const (
 	relativeTextLibraryPath  = "vcs/github/nce/tourenbuch/"
 	relativeAssetLibraryPath = "Library/Mobile Documents/com~apple~CloudDocs/privat/sport/Tourenbuch/"

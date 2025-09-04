@@ -1,4 +1,4 @@
-package stats
+package statistics
 
 import (
 	"reflect"
@@ -8,27 +8,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFilterActivityTypes(t *testing.T) {
+func TestFilterActivityKinds(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		activityTypes string
-		expected      []activity.ActivityType
+		activityKinds string
+		expected      []activity.Kind
 	}{
 		{
 			"all",
-			[]activity.ActivityType{
+			[]activity.Kind{
 				{Name: "mtb"},
 				{Name: "skitour"},
 			},
 		}, {
 			"mtb",
-			[]activity.ActivityType{
+			[]activity.Kind{
 				{Name: "mtb"},
 			},
 		}, {
 			"mtb, skitour",
-			[]activity.ActivityType{
+			[]activity.Kind{
 				{Name: "mtb"},
 				{Name: "skitour"},
 			},
@@ -36,11 +36,11 @@ func TestFilterActivityTypes(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.activityTypes, func(t *testing.T) {
+		t.Run(tt.activityKinds, func(t *testing.T) {
 			t.Parallel()
 
-			result, err := filterActivityTypes(tt.activityTypes)
-			if !assert.Equal(t, reflect.TypeOf([]activity.ActivityType{}), reflect.TypeOf(result)) {
+			result, err := filterActivityKinds(tt.activityKinds)
+			if !assert.Equal(t, reflect.TypeOf([]activity.Kind{}), reflect.TypeOf(result)) {
 				t.Errorf("got %v, want %v", result, tt.expected)
 			}
 
@@ -55,24 +55,24 @@ func TestFilterActivityTypes(t *testing.T) {
 	}
 }
 
-func TestFilterActivityTypesForErrors(t *testing.T) {
+func TestFilterActivityKindsForErrors(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		activityTypes string
-		expected      []activity.ActivityType
+		activityKinds string
+		expected      []activity.Kind
 	}{
 		{
 			"notvalid",
-			[]activity.ActivityType{},
+			[]activity.Kind{},
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.activityTypes, func(t *testing.T) {
+		t.Run(tt.activityKinds, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := filterActivityTypes(tt.activityTypes)
+			_, err := filterActivityKinds(tt.activityKinds)
 			if err == nil {
 				t.Error("expected an error")
 			}

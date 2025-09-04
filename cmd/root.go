@@ -136,5 +136,5 @@ func initConfig() {
 	log.Debug().Msg("Environment config initialized")
 	viper.AutomaticEnv()
 
-	activity.GetActivityTypes()
+	activity.GetActivityKinds()
 }

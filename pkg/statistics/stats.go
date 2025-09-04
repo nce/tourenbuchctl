@@ -1,4 +1,4 @@
-package stats
+package statistics
 
 import (
 	"errors"
@@ -13,7 +13,7 @@ import (
 )
 
 func WriteStats(activityTypes string, outputFormat string, regionalGrouping bool) {
-	validActivities, err := filterActivityTypes(activityTypes)
+	validActivities, err := filterActivityKinds(activityTypes)
 	if err != nil {
 		log.Error().Msgf("Error reading directory contents: %v", err)
 	}
@@ -29,36 +29,36 @@ func WriteStats(activityTypes string, outputFormat string, regionalGrouping bool
 }
 
 // filter activity types by string inputs like "mtb" or "mtb, skitour".
-func filterActivityTypes(activityTypes string) ([]activity.ActivityType, error) {
-	var validActivityTypes []activity.ActivityType
+func filterActivityKinds(activityTypes string) ([]activity.Kind, error) {
+	var validActivityKinds []activity.Kind
 
 	if activityTypes == "all" {
-		validActivityTypes = append(validActivityTypes, activity.ActivityTypes...)
+		validActivityKinds = append(validActivityKinds, activity.ActivityTypes...)
 
-		return validActivityTypes, nil
+		return validActivityKinds, nil
 	}
 
-	unfilteredActivityTypes := strings.Split(strings.ReplaceAll(activityTypes, " ", ""), ",")
+	unfilteredActivityKinds := strings.Split(strings.ReplaceAll(activityTypes, " ", ""), ",")
 
-	var filteredActivityTypes []activity.ActivityType
+	var filteredActivityKinds []activity.Kind
 
-	for _, unfilteredActivityType := range unfilteredActivityTypes {
+	for _, unfilteredActivityKind := range unfilteredActivityKinds {
 		// check if it's a valid activity type
-		if activity.ValidActivityType(unfilteredActivityType) {
+		if activity.ValidActivityType(unfilteredActivityKind) {
 			for _, validType := range activity.ActivityTypes {
 				// add this valid type to the slice
-				if validType.Name == unfilteredActivityType {
-					filteredActivityTypes = append(filteredActivityTypes, validType)
+				if validType.Name == unfilteredActivityKind {
+					filteredActivityKinds = append(filteredActivityKinds, validType)
 				}
 			}
 		}
 	}
 
-	if len(filteredActivityTypes) == 0 {
+	if len(filteredActivityKinds) == 0 {
 		return nil, ErrNoValidActivityTypes
 	}
 
-	return filteredActivityTypes, nil
+	return filteredActivityKinds, nil
 }
 
 type activityData struct {
@@ -72,7 +72,7 @@ type activityData struct {
 	Participants string
 }
 
-func gatherActivites(activityTypes []activity.ActivityType) ([]activityData, error) {
+func gatherActivites(activityTypes []activity.Kind) ([]activityData, error) {
 	var skippedActivities int
 
 	var validActivities int

@@ -6,17 +6,16 @@ import (
 )
 
 // nolint: gochecknoglobals
-var ActivityTypes []ActivityType
+var ActivityTypes []Kind
 
-type ActivityType struct {
+type Kind struct {
 	Name      string
 	TextPath  string
 	AssetPath string
 }
 
-func GetActivityTypes() {
+func GetActivityKinds() {
 	validActivities := viper.GetStringSlice("activities")
-	// var activityTypes []ActivityType
 
 	textPath, err := GetTextLibraryPath()
 	if err != nil {
@@ -29,7 +28,7 @@ func GetActivityTypes() {
 	}
 
 	for _, validActivity := range validActivities {
-		activity := ActivityType{
+		activity := Kind{
 			Name:      validActivity,
 			TextPath:  textPath + "/" + validActivity,
 			AssetPath: assetPath + "/" + validActivity,

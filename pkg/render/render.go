@@ -207,8 +207,11 @@ func NewPage(cwd string, saveToDisk bool) (*PageOpts, error) {
 		return nil, fmt.Errorf("failed to split activity directory name: %w", err)
 	}
 
-	activity, err := activity.GetFromHeader[string](cwd, "Activity.Type",
-		"Layout.ElevationProfileType", "Activity.MaxElevation", "Activity.Title")
+	activity, err := activity.GetFromHeader[string](cwd,
+		"Activity.Type",
+		"Layout.ElevationProfileType",
+		"Activity.MaxElevation",
+		"Activity.Title")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read values from header.yaml: %w", err)
 	}
