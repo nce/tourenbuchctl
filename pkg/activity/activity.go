@@ -291,3 +291,16 @@ func (a *Activity) getSeason() string {
 		return "unknown"
 	}
 }
+
+// checks if a string is the correct name of an activityType.
+func ValidActivityType(activity string) bool {
+	log.Info().Msgf("valid activities: %d", len(ActivityTypes))
+
+	for _, validAcitvityType := range ActivityTypes {
+		if activity == validAcitvityType.Name {
+			return true
+		}
+	}
+
+	return false
+}

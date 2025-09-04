@@ -60,7 +60,7 @@ func insertElevationProfileType(textDir string) (bool, error) {
 		return false, fmt.Errorf("error getting activity type: %w", err)
 	}
 
-	switch activityType {
+	switch activityType["Activity.Type"] {
 	case "skitour":
 		layout = "right-axis-filtered-layout"
 	case "wandern":

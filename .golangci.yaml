@@ -6,6 +6,7 @@ linters:
     - mnd
     - funlen
     - testpackage
+    - exportloopref
 
 linters-settings:
   gocognit:

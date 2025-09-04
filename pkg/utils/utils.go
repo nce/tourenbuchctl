@@ -20,15 +20,6 @@ type Token struct {
 	Expiry       time.Time `json:"expiry"`
 }
 
-type Header struct {
-	Activity Activity `yaml:"activity"`
-	Layout   Layout   `yaml:"layout"`
-}
-
-type Activity struct {
-	Type string `yaml:"type"`
-}
-
 type Layout struct {
 	ElevationProfileType string `yaml:"elevationProfileType"`
 }
