@@ -6,7 +6,6 @@
   "labels": [
     "🛠️ dependencies"
   ],
-  "dependencyDashboardApproval": true,
   "postUpdateOptions": [
     "gomodTidy"
   ],
@@ -16,9 +15,9 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": [
-        "(^|/).+\\.yaml$",
-        "Makefile"
+      "managerFilePatterns": [
+        "/(^|/).+\\.yaml$/",
+        "/Makefile/"
       ],
       "matchStrings": [
         "\\s*#\\s?renovate: (?<datasource>.*?)=(?<depName>.*?)(\\s+versioning=(?<versioning>.*?))?\\s+[\\w+\\.\\-]+(?:[:=]|\\s+\\S+)\\s*[\\\"']?(?<currentValue>[\\w+\\.\\-]*)(?:@(?<currentDigest>sha256:[a-f0-9]+))?[\\\"']?"
@@ -29,6 +28,6 @@
   ],
   "timezone": "Europe/Berlin",
   "schedule": [
-    "before 3am on Monday"
+    "* * * * 1"
   ]
 }
