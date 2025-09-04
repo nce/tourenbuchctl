@@ -5,8 +5,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-// nolint: gochecknoglobals
-var ActivityTypes []Kind
+var (
+	//nolint: gochecknoglobals
+	ActivityTypes []Kind
+)
 
 type Kind struct {
 	Name      string
