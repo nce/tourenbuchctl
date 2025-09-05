@@ -35,11 +35,10 @@
     {
       "groupName": "major upgrades",
       "matchUpdateTypes": ["major"],
-      "separateMajorMinor": true
     }
   ],
   "timezone": "Europe/Berlin",
   "schedule": [
-    "0 4 * * 1"
+    "* 0-4 * * 1"
   ]
 }
