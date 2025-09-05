@@ -4,7 +4,7 @@ CLIENT_DIR=$(GEN_DIR)/client
 APP_NAME=tourenbuchctl
 
 # renovate: github=golangci/golangci-lint
-GO_LINT_CI_VERSION := v1.63.4
+GO_LINT_CI_VERSION := v1.64.8
 LDFLAGS :="-X main.version=$(shell git describe --tags --always --dirty) -X main.commit=$(shell git rev-parse --short HEAD) -X main.date=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
 .PHONY: all clean generate build run
