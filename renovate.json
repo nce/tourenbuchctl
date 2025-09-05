@@ -1,7 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    ":semanticCommits"
   ],
   "labels": [
     "🛠️ dependencies"
@@ -26,8 +27,19 @@
       "versioningTemplate": "{{#if (equals datasource 'docker')}}docker{{else if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     }
   ],
+  "packageRules": [
+    {
+      "groupName": "all non-major dependencies",
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "groupName": "major upgrades",
+      "matchUpdateTypes": ["major"],
+      "separateMajorMinor": true
+    }
+  ],
   "timezone": "Europe/Berlin",
   "schedule": [
-    "* * * * 1"
+    "0 4 * * 1"
   ]
 }
