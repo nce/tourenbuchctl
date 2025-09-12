@@ -63,6 +63,7 @@ func filterActivityKinds(activityTypes string) ([]activity.Kind, error) {
 
 type activityData struct {
 	Title        string
+	Type         string
 	Dirname      string
 	Date         string
 	Region       string
@@ -111,6 +112,7 @@ func gatherActivites(activityTypes []activity.Kind) ([]activityData, error) {
 					"Activity.Date",
 					"Activity.PointOfOrigin.Region",
 					"Activity.Company",
+					"Activity.Type",
 					"Stats.Ascent",
 					"Stats.Distance",
 					"Stats.OverallTime",
@@ -123,6 +125,7 @@ func gatherActivites(activityTypes []activity.Kind) ([]activityData, error) {
 				activityData.Date = act["Activity.Date"]
 				activityData.Region = act["Activity.PointOfOrigin.Region"]
 				activityData.Participants = act["Activity.Company"]
+				activityData.Type = act["Activity.Type"]
 				activityData.Ascent = act["Stats.Ascent"]
 				activityData.Distance = act["Stats.Distance"]
 				activityData.Duration = act["Stats.OverallTime"]

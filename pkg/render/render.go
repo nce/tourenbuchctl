@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/nce/tourenbuchctl/pkg/activity"
+	"github.com/nce/tourenbuchctl/pkg/pdfexport"
 	"github.com/nce/tourenbuchctl/pkg/utils"
 	"github.com/rs/zerolog/log"
 )
@@ -27,9 +28,11 @@ type PageOpts struct {
 	ActivityDate         string
 	ActivityType         string
 	ElevationProfileType string
-	SaveToDisk           bool
+	ExportToDisk         bool
+	ExportToS3           bool
 	MaxElevation         string
 	ActivityTitle        string
+	Compression          bool
 }
 
 const (
@@ -201,7 +204,7 @@ func (n *PageOpts) generateLatexDescription() error {
 	return nil
 }
 
-func NewPage(cwd string, saveToDisk bool) (*PageOpts, error) {
+func NewPage(cwd string, exportToDisk bool, exportToS3 bool, compression bool) (*PageOpts, error) {
 	name, date, err := utils.SplitActivityDirectoryName(filepath.Base(cwd))
 	if err != nil {
 		return nil, fmt.Errorf("failed to split activity directory name: %w", err)
@@ -221,13 +224,15 @@ func NewPage(cwd string, saveToDisk bool) (*PageOpts, error) {
 		AbsoluteTextDir:      "/Users/nce/vcs/github/nce/tourenbuch/",
 		AbsoluteCwd:          cwd,
 		RelativeCwd:          strings.TrimPrefix(cwd, "/Users/nce/vcs/github/nce/tourenbuch/"),
-		SaveToDisk:           saveToDisk,
+		ExportToDisk:         exportToDisk,
+		ExportToS3:           exportToS3,
 		ActivityName:         name,
 		ActivityDate:         date,
 		ActivityType:         activity["Activity.Type"],
 		ElevationProfileType: activity["Layout.ElevationProfileType"],
 		MaxElevation:         activity["Activity.MaxElevation"],
 		ActivityTitle:        activity["Activity.Title"],
+		Compression:          compression,
 	}, nil
 }
 
@@ -282,16 +287,60 @@ func (n *PageOpts) GenerateSinglePageActivity(preventCleanup bool) error {
 		return fmt.Errorf("failed to generate PDF: %w\n%s", err, stdout.String())
 	}
 
-	if n.SaveToDisk {
-		storagePath := n.AbsoluteAssetDir + n.RelativeCwd + "/" +
-			n.ActivityName + "-" + n.ActivityDate + ".pdf"
+	if n.Compression {
+		//nolint: gosec
+		cmd := exec.Command(
+			"gs",
+			"-sDEVICE=pdfwrite",
+			"-dCompatibilityLevel=1.4",
+			"-dPDFSETTINGS=/ebook",
+			"-dNOPAUSE -dQUIET -dBATCH",
+			fmt.Sprintf("-sOutputFile=%s/compressed.pdf", tempDir),
+			tempDir+"/document.pdf")
 
-		err = copyFile(tempDir+"/document.pdf", storagePath)
+		var stdout bytes.Buffer
+		cmd.Stdout = &stdout
+		cmd.Stderr = os.Stderr
+
+		err = cmd.Run()
 		if err != nil {
-			return fmt.Errorf("failed to save PDF to disk: %w", err)
+			return fmt.Errorf("failed to compress PDF: %w\n%s", err, stdout.String())
 		}
 
-		log.Info().Str("storage", storagePath).Msg("PDF saved to disk")
+		err = os.Rename(tempDir+"/compressed.pdf", tempDir+"/document.pdf")
+		if err != nil {
+			return fmt.Errorf("failed to rename compressed PDF: %w", err)
+		}
+	}
+
+	if n.ExportToDisk {
+		local := pdfexport.LocalExport{
+			DestDirectory: n.AbsoluteAssetDir + n.RelativeCwd,
+			DestFilename:  n.ActivityDate + "-" + n.ActivityDate + ".pdf",
+		}
+
+		if err := local.Save(tempDir + "/document.pdf"); err != nil {
+			return fmt.Errorf("failed to export to Diskpath: %s; %w", local.DestDirectory, err)
+		}
+
+		log.Info().Str("export", local.DestDirectory).Msg("PDF saved to disk")
+	}
+
+	if n.ExportToS3 {
+		//nolint: varnamelen
+		s3 := pdfexport.S3Export{
+			BucketName: "tourenbuch",
+			ObjectName: n.ActivityType + "/" + n.ActivityName + "-" + n.ActivityDate + ".pdf",
+		}
+
+		if err := s3.Save(tempDir + "/document.pdf"); err != nil {
+			return fmt.Errorf("failed to export to s3: %s; %w", s3.ObjectName, err)
+		}
+
+		log.Info().
+			Str("bucket", s3.BucketName).
+			Str("object", s3.ObjectName).
+			Msg("PDF saved to s3")
 	}
 
 	pdfFilePath := filepath.Join(tempDir, "document.pdf")
