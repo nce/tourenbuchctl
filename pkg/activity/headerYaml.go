@@ -87,7 +87,8 @@ func GetFromHeader[T any](dir string, fields ...string) (map[string]T, error) {
 	return results, nil
 }
 
-func searchField[T any](v interface{}, path string) (T, error) { //nolint:ireturn
+//nolint:ireturn
+func searchField[T any](v interface{}, path string) (T, error) {
 	keys := strings.Split(path, ".")
 	header := reflect.ValueOf(v)
 

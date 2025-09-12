@@ -11,9 +11,13 @@ import (
 )
 
 func NewGenCommand() *cobra.Command {
-	var saveToDisk bool
-
 	var preventCleanup bool
+
+	var exportToDisk bool
+
+	var exportToS3 bool
+
+	var compression bool
 
 	cmd := &cobra.Command{
 		Use:   "gen",
@@ -29,7 +33,7 @@ func NewGenCommand() *cobra.Command {
 			spin := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
 			spin.Start()
 
-			page, err := render.NewPage(path, saveToDisk)
+			page, err := render.NewPage(path, exportToDisk, exportToS3, compression)
 			if err != nil {
 				log.Fatal().Err(err).Str("cwd", path).Msg("Error creating a new page")
 			}
@@ -44,9 +48,11 @@ func NewGenCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVarP(&saveToDisk, "save", "s", false, "Save the rendered pdf to assetdir on disk")
+	cmd.Flags().BoolVarP(&exportToDisk, "save", "s", false, "Save the rendered pdf to assetdir on disk")
+	cmd.Flags().BoolVarP(&exportToS3, "upload", "u", false, "upload the pdf to cloud s3")
 	cmd.Flags().BoolVarP(&preventCleanup, "prevent-cleanup", "x", false, "Don't remove the temporary "+
 		"rendering folders. Useful for debugging")
+	cmd.Flags().BoolVarP(&compression, "compress", "c", false, "compress the pdf after generation")
 
 	return cmd
 }
