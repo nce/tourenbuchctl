@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-// Remove old tex artefacts; Makefiles etc.
+// RemoveObsoleteFiles removes old tex artefacts; Makefiles etc.
 func RemoveObsoleteFiles(textDir string) (bool, error) {
 	files := []string{
 		"Makefile",

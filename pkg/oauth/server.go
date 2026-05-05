@@ -17,13 +17,13 @@ const (
 var ErrFailedTimeout = errors.New("timeout waiting for callback")
 
 type callbackResult struct {
-	Interface interface{}
+	Interface any
 	Error     error
 }
 
 func runCallbackServer(callback func(w http.ResponseWriter,
-	r *http.Request) (interface{}, error),
-) func() (interface{}, error) {
+	r *http.Request) (any, error),
+) func() (any, error) {
 	port := authCallbackPort
 	redirectURI := authCallbackPath
 
@@ -31,14 +31,16 @@ func runCallbackServer(callback func(w http.ResponseWriter,
 
 	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
-		return func() (interface{}, error) {
+		return func() (any, error) {
 			return nil, fmt.Errorf("TCP connection initialization: %w", err)
 		}
 	}
 
-	listen, err := net.Listen("tcp", addr.String())
+	lc := net.ListenConfig{}
+
+	listen, err := lc.Listen(context.Background(), "tcp", addr.String())
 	if err != nil {
-		return func() (interface{}, error) {
+		return func() (any, error) {
 			return nil, fmt.Errorf("TCP server listen initialization: %w", err)
 		}
 	}
@@ -67,7 +69,7 @@ func runCallbackServer(callback func(w http.ResponseWriter,
 		}
 	}()
 
-	closeAndReturn := func() (interface{}, error) {
+	closeAndReturn := func() (any, error) {
 		var finalErr error
 
 		// Block till the callback gives us a result.

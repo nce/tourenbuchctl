@@ -2,6 +2,7 @@ package activity
 
 import (
 	"bufio"
+	"context"
 	"embed"
 	"errors"
 	"fmt"
@@ -207,7 +208,16 @@ func generateNewLocationQr() (string, error) {
 	dir += "/meta/location-qr"
 
 	//nolint: gosec
-	cmd := exec.Command("qrencode", "-t", "EPS", "-o", dir+"/"+filename+".eps", "geo:"+gpsLocation)
+	cmd := exec.CommandContext(
+		context.Background(),
+		"qrencode",
+		"-t",
+		"EPS",
+		"-o",
+		dir+"/"+filename+".eps",
+		"geo:"+gpsLocation,
+	)
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -292,7 +302,7 @@ func (a *Activity) getSeason() string {
 	}
 }
 
-// checks if a string is the correct name of an activityType.
+// ValidActivityType checks if a string is the correct name of an activityType.
 func ValidActivityType(activity string) bool {
 	log.Info().Msgf("valid activities: %d", len(ActivityTypes))
 

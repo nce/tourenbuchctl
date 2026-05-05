@@ -1,43 +1,62 @@
+version: "2"
 linters:
-  enable-all: true
+  default: all
+  enable:
+    - wsl_v5
+    - gomodguard_v2
   disable:
+    - noinlineerr
+    - wsl
+    - gomodguard
     - depguard
     - exhaustruct
-    - mnd
     - funlen
+    - mnd
     - testpackage
-    - exportloopref
-
-linters-settings:
-  gocognit:
-    # Minimal code complexity to report.
-    # Default: 30 (but we recommend 10-20)
-    min-complexity: 40
-  cyclop:
-    # The maximal code complexity to report.
-    # Default: 10
-    max-complexity: 20
-    # The maximal average package complexity.
-    # If it's higher than 0.0 (float) the check is enabled
-    # Default: 0.0
-    package-average: 20.0
-  varnamelen:
-    ignore-names:
-      - tt
-      - tc
-    ignore-decls:
-      - g *gpx.GPX
-      - g gpx.GPX
-      - i int
-      - a ...any
-      - err error
-      - ok bool
-      - id string
-      - sb *strings.Builder
-      - w http.ResponseWriter
-      - rt http.RoundTripper
-      - r *http.Request
-
-issues:
-  exclude-dirs:
-    - pkg/stravaapi
+  settings:
+    cyclop:
+      max-complexity: 20
+      package-average: 20
+    gocognit:
+      min-complexity: 40
+    varnamelen:
+      ignore-names:
+        - tt
+        - tc
+      ignore-decls:
+        - g *gpx.GPX
+        - g gpx.GPX
+        - i int
+        - a ...any
+        - err error
+        - ok bool
+        - id string
+        - sb *strings.Builder
+        - w http.ResponseWriter
+        - rt http.RoundTripper
+        - r *http.Request
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - pkg/stravaapi
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - pkg/stravaapi
+      - third_party$
+      - builtin$
+      - examples$

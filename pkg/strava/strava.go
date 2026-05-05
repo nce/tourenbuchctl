@@ -50,7 +50,11 @@ func loginStrava() (*http.Client, error) {
 		log.Debug().Msgf("Oauth URL: %s", oauth.StravaOauthConfig.AuthCodeURL(oauth.OauthStateString))
 
 		//nolint: gosec
-		err := exec.Command("open", oauth.StravaOauthConfig.AuthCodeURL(oauth.OauthStateString)).Start()
+		err := exec.CommandContext(
+			context.Background(),
+			"open",
+			oauth.StravaOauthConfig.AuthCodeURL(oauth.OauthStateString),
+		).Start()
 		if err != nil {
 			return nil, fmt.Errorf("exec open strava url: %w", err)
 		}
@@ -81,7 +85,8 @@ func updateActivityTypeToMtb(activityID int64, apiClient api.APIClient) error {
 	act, response, err := apiClient.ActivitiesApi.UpdateActivityById(
 		context.Background(),
 		activityID,
-		updateActivity)
+		updateActivity,
+	)
 
 	defer func() {
 		if response != nil && response.Body != nil {

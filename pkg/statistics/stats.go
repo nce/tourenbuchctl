@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/nce/tourenbuchctl/pkg/activity"
 	"github.com/rs/zerolog/log"
@@ -22,6 +23,14 @@ func WriteStats(activityTypes string, outputFormat string, regionalGrouping bool
 	if err != nil {
 		log.Error().Msgf("Error gathering all activities: %v", err)
 	}
+
+	sort.Slice(activityCollection, func(i, j int) bool {
+		if activityCollection[i].Title == activityCollection[j].Title {
+			return activityCollection[i].Date.Before(activityCollection[j].Date)
+		}
+
+		return activityCollection[i].Title < activityCollection[j].Title
+	})
 
 	if outputFormat == "md" {
 		printMarkdown(activityCollection, regionalGrouping)
@@ -65,7 +74,7 @@ type activityData struct {
 	Title        string
 	Type         string
 	Dirname      string
-	Date         string
+	Date         time.Time
 	Region       string
 	Ascent       string
 	Distance     string
@@ -122,7 +131,17 @@ func gatherActivites(activityTypes []activity.Kind) ([]activityData, error) {
 				}
 
 				activityData.Title = act["Activity.Title"]
-				activityData.Date = act["Activity.Date"]
+
+				// no german localization for time.Parse, so strip the leading Weekday
+				parts := strings.SplitN(act["Activity.Date"], ", ", 2)
+				datePart := parts[1]
+
+				activityDate, err := time.Parse("02.01.2006", datePart)
+				if err != nil {
+					log.Error().Str("folder", headerPath).Msgf("Failed to parse time string: %v", err)
+				}
+
+				activityData.Date = activityDate
 				activityData.Region = act["Activity.PointOfOrigin.Region"]
 				activityData.Participants = act["Activity.Company"]
 				activityData.Type = act["Activity.Type"]

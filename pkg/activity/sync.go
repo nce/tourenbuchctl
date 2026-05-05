@@ -69,8 +69,7 @@ func (a *Activity) StravaSync() error {
 	}
 
 	if a.Meta.StravaGpxSync {
-		//nolint: gosimple
-		if a.Meta.StravaSync == false {
+		if !a.Meta.StravaSync {
 			stats, err := strava.FetchStravaData(a.Tb.Date)
 			if err != nil {
 				return fmt.Errorf("fetching data from strava: %w", err)

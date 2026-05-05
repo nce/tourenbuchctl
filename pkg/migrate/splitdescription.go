@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// migrate "description.md" to header.yaml and description.md.
+// SplitDescriptionFile splits "description.md" to header.yaml and description.md.
 func SplitDescriptionFile(textDir string) (bool, error) {
 	// Check if header.yaml already exists
 	if _, err := os.Stat(textDir + "header.yaml"); err == nil {

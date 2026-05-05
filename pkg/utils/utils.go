@@ -3,6 +3,7 @@ package utils
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -38,6 +39,7 @@ func SaveToken(filename string, token *oauth2.Token) error {
 		Expiry:       token.Expiry,
 	}
 
+	//nolint: gosec
 	err = json.NewEncoder(file).Encode(data)
 	if err != nil {
 		return fmt.Errorf("encoding json: %w", err)
@@ -73,7 +75,14 @@ func (t *Token) Valid() bool {
 }
 
 func FuzzyFind(header string, input []string) (string, error) {
-	cmd := exec.Command("fzf", "--tmux", "right,30%,40%", "--header", header)
+	cmd := exec.CommandContext(
+		context.Background(),
+		"fzf",
+		"--tmux",
+		"right,30%,40%",
+		"--header",
+		header,
+	)
 
 	// Create pipes to communicate with fzf
 	stdin, err := cmd.StdinPipe()
@@ -122,7 +131,7 @@ func FuzzyFind(header string, input []string) (string, error) {
 	return selectedLine, nil
 }
 
-// expects only the last part of the path.
+// SplitActivityDirectoryName returns  only the last part of the path.
 func SplitActivityDirectoryName(dirName string) (string, string, error) {
 	// Regular expression to match the schema "name-dd.mm.yyyy"
 	regexPattern := regexp.MustCompile(`^([a-zA-Z0-9\.]+)-(\d{2}\.\d{2}\.\d{4})$`)

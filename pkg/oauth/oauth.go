@@ -20,9 +20,9 @@ const (
 )
 
 var (
-	//nolint: gochecknoglobals
+	//nolint: godoclint,gochecknoglobals
 	StravaOauthConfig *oauth2.Config
-	//nolint: gochecknoglobals
+	//nolint: godoclint,gochecknoglobals
 	OauthStateString = "random" // This should be a random string for better security
 
 	ErrInvalidOauthState = errors.New("invalid oauth state")
@@ -41,6 +41,7 @@ func InitStravaOauthConfig() {
 	StravaOauthConfig = &oauth2.Config{
 		ClientID:     viper.GetString("STRAVA_CLIENT_ID"),
 		ClientSecret: viper.GetString("STRAVA_CLIENT_SECRET"),
+		//nolint: gosec
 		Endpoint: oauth2.Endpoint{
 			TokenURL: "https://www.strava.com/api/v3/oauth/token",
 			AuthURL:  "https://www.strava.com/api/v3/oauth/authorize",
@@ -52,8 +53,8 @@ func InitStravaOauthConfig() {
 	log.Debug().Str("clientsecret", StravaOauthConfig.ClientSecret).Send()
 }
 
-func handleStravaCallback(tokenFile string) func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	return func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func handleStravaCallback(tokenFile string) func(w http.ResponseWriter, r *http.Request) (any, error) {
+	return func(w http.ResponseWriter, r *http.Request) (any, error) {
 		if r.FormValue("state") != OauthStateString {
 			log.Error().Msg("Invalid oauth state")
 			templates.HTMLRender(w, "templates/strava-failure.html")

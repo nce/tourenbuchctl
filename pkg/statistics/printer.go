@@ -21,7 +21,7 @@ func printMarkdown(activityCollection []activityData, regionalGrouping bool) {
 			for _, activity := range activityCollection {
 				if activity.Region == region.Region {
 					line := []string{
-						"[" + activity.Title + "](" + activity.Dirname + ")" + " (" + activity.Date + ")",
+						"[" + activity.Title + "](" + activity.Dirname + ")" + " (" + formatGermanDateString(activity.Date) + ")",
 						"[📚](https://s3.nce.wtf/" + activity.Type + "/" + activity.Dirname + ".pdf)",
 						activity.Ascent + "hm",
 						activity.Distance + "km",
@@ -32,21 +32,17 @@ func printMarkdown(activityCollection []activityData, regionalGrouping bool) {
 				}
 			}
 
-			sort.Slice(tableContent, func(i, j int) bool {
-				return tableContent[i][0] < tableContent[j][0]
-			})
-
 			doc = doc.Table(md.TableSet{
 				Header: []string{"Name", "PDF", "Ascent", "Distance", "Duration", "Participants"},
 				Rows:   tableContent,
 			})
 		}
 	} else {
-		var tableContent [][]string
+		tableContent := make([][]string, 0, len(activityCollection))
 
 		for _, activity := range activityCollection {
 			line := []string{
-				"[" + activity.Title + "](" + activity.Dirname + ")" + " (" + activity.Date + ")",
+				"[" + activity.Title + "](" + activity.Dirname + ")" + " (" + formatGermanDateString(activity.Date) + ")",
 				activity.Ascent + "hm",
 				activity.Distance + "km",
 				activity.Duration + "h",
