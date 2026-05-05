@@ -54,7 +54,8 @@ func (s3 *S3Export) Save(srcFile string) error {
 		BucketName:    &s3.BucketName,
 		ObjectName:    &s3.ObjectName,
 		PutObjectBody: file,
-		ContentType:   common.String("application/pdf"),
+		//nolint: modernize
+		ContentType: common.String("application/pdf"),
 	}
 
 	_, err = s3.Client.PutObject(ctx, putReq)
