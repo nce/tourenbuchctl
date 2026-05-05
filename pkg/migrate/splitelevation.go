@@ -76,6 +76,7 @@ func insertElevationProfileType(textDir string) (bool, error) {
 	}
 	// Marshal the updated data back to YAML
 	var enc bytes.Buffer
+
 	yamlEncoder := yaml.NewEncoder(&enc)
 	yamlEncoder.SetIndent(2)
 

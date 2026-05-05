@@ -28,6 +28,7 @@ func WriteStats(activityTypes string, outputFormat string, regionalGrouping bool
 		if activityCollection[i].Title == activityCollection[j].Title {
 			return activityCollection[i].Date.Before(activityCollection[j].Date)
 		}
+
 		return activityCollection[i].Title < activityCollection[j].Title
 	})
 
@@ -134,11 +135,13 @@ func gatherActivites(activityTypes []activity.Kind) ([]activityData, error) {
 				// no german localization for time.Parse, so strip the leading Weekday
 				parts := strings.SplitN(act["Activity.Date"], ", ", 2)
 				datePart := parts[1]
-				t, err := time.Parse("02.01.2006", datePart)
+
+				activityDate, err := time.Parse("02.01.2006", datePart)
 				if err != nil {
 					log.Error().Str("folder", headerPath).Msgf("Failed to parse time string: %v", err)
 				}
-				activityData.Date = t
+
+				activityData.Date = activityDate
 				activityData.Region = act["Activity.PointOfOrigin.Region"]
 				activityData.Participants = act["Activity.Company"]
 				activityData.Type = act["Activity.Type"]

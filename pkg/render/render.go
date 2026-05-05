@@ -2,6 +2,7 @@ package render
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"fmt"
 	"io"
@@ -76,12 +77,177 @@ func copyFile(src, dst string) error {
 	return nil
 }
 
+func NewPage(cwd string, exportToDisk bool, exportToS3 bool, compression bool) (*PageOpts, error) {
+	name, date, err := utils.SplitActivityDirectoryName(filepath.Base(cwd))
+	if err != nil {
+		return nil, fmt.Errorf("failed to split activity directory name: %w", err)
+	}
+
+	activity, err := activity.GetFromHeader[string](cwd,
+		"Activity.Type",
+		"Layout.ElevationProfileType",
+		"Activity.MaxElevation",
+		"Activity.Title")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read values from header.yaml: %w", err)
+	}
+
+	return &PageOpts{
+		AbsoluteAssetDir:     "/Users/nce/Library/Mobile Documents/com~apple~CloudDocs/privat/sport/Tourenbuch/",
+		AbsoluteTextDir:      "/Users/nce/vcs/github/nce/tourenbuch/",
+		AbsoluteCwd:          cwd,
+		RelativeCwd:          strings.TrimPrefix(cwd, "/Users/nce/vcs/github/nce/tourenbuch/"),
+		ExportToDisk:         exportToDisk,
+		ExportToS3:           exportToS3,
+		ActivityName:         name,
+		ActivityDate:         date,
+		ActivityType:         activity["Activity.Type"],
+		ElevationProfileType: activity["Layout.ElevationProfileType"],
+		MaxElevation:         activity["Activity.MaxElevation"],
+		ActivityTitle:        activity["Activity.Title"],
+		Compression:          compression,
+	}, nil
+}
+
+func (n *PageOpts) GenerateSinglePageActivity(preventCleanup bool) error {
+	tempDir, err := os.MkdirTemp(".", "tmp")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create temp directory")
+	}
+
+	defer func() {
+		if !preventCleanup {
+			time.Sleep(1 * time.Second) // Sleep for 1 second before removing the directory
+			os.RemoveAll(tempDir)
+		} else {
+			log.Info().Msgf("Asset rendering folder not removed (%s)", tempDir)
+		}
+	}()
+
+	n.TmpDir = tempDir
+
+	latexFilePath := filepath.Join(tempDir, "document.tex")
+
+	//nolint: gosec
+	err = os.WriteFile(latexFilePath, []byte(latexContent), 0o644)
+	if err != nil {
+		return fmt.Errorf("failed to write LaTeX file: %w", err)
+	}
+
+	if err = n.extractGpxData(); err != nil {
+		return fmt.Errorf("failed to extract gpx data: %w", err)
+	}
+
+	if err = n.generateLatexDescription(); err != nil {
+		return fmt.Errorf("failed to generate latex description: %w", err)
+	}
+
+	if err = n.generatElevationProfile(); err != nil {
+		return fmt.Errorf("failed to generate elevation profile: %w", err)
+	}
+
+	cmd := exec.CommandContext(
+		context.Background(),
+		"pdflatex",
+		"-shell-escape",
+		"-output-directory", tempDir, latexFilePath,
+	)
+
+	var stdout bytes.Buffer
+
+	cmd.Stdout = &stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to generate PDF: %w\n%s", err, stdout.String())
+	}
+
+	if n.Compression {
+		//nolint: gosec
+		cmd := exec.CommandContext(
+			context.Background(),
+			"gs",
+			"-sDEVICE=pdfwrite",
+			"-dCompatibilityLevel=1.4",
+			"-dPDFSETTINGS=/ebook",
+			"-dNOPAUSE -dQUIET -dBATCH",
+			fmt.Sprintf("-sOutputFile=%s/compressed.pdf", tempDir),
+			tempDir+"/document.pdf",
+		)
+
+		var stdout bytes.Buffer
+
+		cmd.Stdout = &stdout
+		cmd.Stderr = os.Stderr
+
+		err = cmd.Run()
+		if err != nil {
+			return fmt.Errorf("failed to compress PDF: %w\n%s", err, stdout.String())
+		}
+
+		err = os.Rename(tempDir+"/compressed.pdf", tempDir+"/document.pdf")
+		if err != nil {
+			return fmt.Errorf("failed to rename compressed PDF: %w", err)
+		}
+	}
+
+	if n.ExportToDisk {
+		local := pdfexport.LocalExport{
+			DestDirectory: n.AbsoluteAssetDir + n.RelativeCwd,
+			DestFilename:  n.ActivityDate + "-" + n.ActivityDate + ".pdf",
+		}
+
+		if err := local.Save(tempDir + "/document.pdf"); err != nil {
+			return fmt.Errorf("failed to export to Diskpath: %s; %w", local.DestDirectory, err)
+		}
+
+		log.Info().Str("export", local.DestDirectory).Msg("PDF saved to disk")
+	}
+
+	if n.ExportToS3 {
+		//nolint: varnamelen
+		s3 := pdfexport.S3Export{
+			BucketName: "tourenbuch",
+			ObjectName: n.ActivityType + "/" + n.ActivityName + "-" + n.ActivityDate + ".pdf",
+		}
+
+		if err := s3.Save(tempDir + "/document.pdf"); err != nil {
+			return fmt.Errorf("failed to export to s3: %s; %w", s3.ObjectName, err)
+		}
+
+		log.Info().
+			Str("bucket", s3.BucketName).
+			Str("object", s3.ObjectName).
+			Msg("PDF saved to s3")
+	}
+
+	pdfFilePath := filepath.Join(tempDir, "document.pdf")
+	viewerCmd := exec.CommandContext(
+		context.Background(),
+		"open",
+		pdfFilePath,
+	)
+
+	viewerCmd.Stdout = os.Stdout
+	viewerCmd.Stderr = os.Stderr
+
+	err = viewerCmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to open PDF: %w", err)
+	}
+
+	return nil
+}
+
 func (n *PageOpts) extractGpxData() error {
 	//nolint: gosec
-	cmd := exec.Command(
+	cmd := exec.CommandContext(
+		context.Background(),
 		"python3",
 		n.AbsoluteAssetDir+"/meta/gpxplot.py",
-		n.AbsoluteAssetDir+n.RelativeCwd+"/input.gpx")
+		n.AbsoluteAssetDir+n.RelativeCwd+"/input.gpx",
+	)
 
 	outfile, err := os.Create(n.TmpDir + "/gpxdata.txt")
 	if err != nil {
@@ -159,7 +325,8 @@ func (n *PageOpts) generatElevationProfile() error {
 	}
 
 	//nolint: gosec
-	cmd := exec.Command(
+	cmd := exec.CommandContext(
+		context.Background(),
 		"gnuplot",
 		"-c",
 		"master.plt",
@@ -181,7 +348,8 @@ func (n *PageOpts) generatElevationProfile() error {
 
 func (n *PageOpts) generateLatexDescription() error {
 	//nolint: gosec
-	cmd := exec.Command(
+	cmd := exec.CommandContext(
+		context.Background(),
 		"pandoc",
 		"--from", "markdown+tex_math_dollars",
 		"--variable=assetdir:"+n.AbsoluteAssetDir+"/"+n.RelativeCwd,
@@ -191,7 +359,8 @@ func (n *PageOpts) generateLatexDescription() error {
 		"--template", n.AbsoluteTextDir+"meta/tourenbuch.template",
 		"--metadata-file", n.AbsoluteCwd+"/header.yaml",
 		n.AbsoluteCwd+"/description.md",
-		"--output", n.TmpDir+"/description.tex")
+		"--output", n.TmpDir+"/description.tex",
+	)
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -199,159 +368,6 @@ func (n *PageOpts) generateLatexDescription() error {
 	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("failed to generate latex description: %w", err)
-	}
-
-	return nil
-}
-
-func NewPage(cwd string, exportToDisk bool, exportToS3 bool, compression bool) (*PageOpts, error) {
-	name, date, err := utils.SplitActivityDirectoryName(filepath.Base(cwd))
-	if err != nil {
-		return nil, fmt.Errorf("failed to split activity directory name: %w", err)
-	}
-
-	activity, err := activity.GetFromHeader[string](cwd,
-		"Activity.Type",
-		"Layout.ElevationProfileType",
-		"Activity.MaxElevation",
-		"Activity.Title")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read values from header.yaml: %w", err)
-	}
-
-	return &PageOpts{
-		AbsoluteAssetDir:     "/Users/nce/Library/Mobile Documents/com~apple~CloudDocs/privat/sport/Tourenbuch/",
-		AbsoluteTextDir:      "/Users/nce/vcs/github/nce/tourenbuch/",
-		AbsoluteCwd:          cwd,
-		RelativeCwd:          strings.TrimPrefix(cwd, "/Users/nce/vcs/github/nce/tourenbuch/"),
-		ExportToDisk:         exportToDisk,
-		ExportToS3:           exportToS3,
-		ActivityName:         name,
-		ActivityDate:         date,
-		ActivityType:         activity["Activity.Type"],
-		ElevationProfileType: activity["Layout.ElevationProfileType"],
-		MaxElevation:         activity["Activity.MaxElevation"],
-		ActivityTitle:        activity["Activity.Title"],
-		Compression:          compression,
-	}, nil
-}
-
-func (n *PageOpts) GenerateSinglePageActivity(preventCleanup bool) error {
-	tempDir, err := os.MkdirTemp(".", "tmp")
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to create temp directory")
-	}
-
-	defer func() {
-		if !preventCleanup {
-			time.Sleep(1 * time.Second) // Sleep for 1 second before removing the directory
-			os.RemoveAll(tempDir)
-		} else {
-			log.Info().Msgf("Asset rendering folder not removed (%s)", tempDir)
-		}
-	}()
-
-	n.TmpDir = tempDir
-
-	latexFilePath := filepath.Join(tempDir, "document.tex")
-
-	//nolint: gosec
-	err = os.WriteFile(latexFilePath, []byte(latexContent), 0o644)
-	if err != nil {
-		return fmt.Errorf("failed to write LaTeX file: %w", err)
-	}
-
-	if err = n.extractGpxData(); err != nil {
-		return fmt.Errorf("failed to extract gpx data: %w", err)
-	}
-
-	if err = n.generateLatexDescription(); err != nil {
-		return fmt.Errorf("failed to generate latex description: %w", err)
-	}
-
-	if err = n.generatElevationProfile(); err != nil {
-		return fmt.Errorf("failed to generate elevation profile: %w", err)
-	}
-
-	cmd := exec.Command(
-		"pdflatex",
-		"-shell-escape",
-		"-output-directory", tempDir, latexFilePath)
-
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = os.Stderr
-
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to generate PDF: %w\n%s", err, stdout.String())
-	}
-
-	if n.Compression {
-		//nolint: gosec
-		cmd := exec.Command(
-			"gs",
-			"-sDEVICE=pdfwrite",
-			"-dCompatibilityLevel=1.4",
-			"-dPDFSETTINGS=/ebook",
-			"-dNOPAUSE -dQUIET -dBATCH",
-			fmt.Sprintf("-sOutputFile=%s/compressed.pdf", tempDir),
-			tempDir+"/document.pdf")
-
-		var stdout bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = os.Stderr
-
-		err = cmd.Run()
-		if err != nil {
-			return fmt.Errorf("failed to compress PDF: %w\n%s", err, stdout.String())
-		}
-
-		err = os.Rename(tempDir+"/compressed.pdf", tempDir+"/document.pdf")
-		if err != nil {
-			return fmt.Errorf("failed to rename compressed PDF: %w", err)
-		}
-	}
-
-	if n.ExportToDisk {
-		local := pdfexport.LocalExport{
-			DestDirectory: n.AbsoluteAssetDir + n.RelativeCwd,
-			DestFilename:  n.ActivityDate + "-" + n.ActivityDate + ".pdf",
-		}
-
-		if err := local.Save(tempDir + "/document.pdf"); err != nil {
-			return fmt.Errorf("failed to export to Diskpath: %s; %w", local.DestDirectory, err)
-		}
-
-		log.Info().Str("export", local.DestDirectory).Msg("PDF saved to disk")
-	}
-
-	if n.ExportToS3 {
-		//nolint: varnamelen
-		s3 := pdfexport.S3Export{
-			BucketName: "tourenbuch",
-			ObjectName: n.ActivityType + "/" + n.ActivityName + "-" + n.ActivityDate + ".pdf",
-		}
-
-		if err := s3.Save(tempDir + "/document.pdf"); err != nil {
-			return fmt.Errorf("failed to export to s3: %s; %w", s3.ObjectName, err)
-		}
-
-		log.Info().
-			Str("bucket", s3.BucketName).
-			Str("object", s3.ObjectName).
-			Msg("PDF saved to s3")
-	}
-
-	pdfFilePath := filepath.Join(tempDir, "document.pdf")
-	viewerCmd := exec.Command("open", pdfFilePath)
-
-	viewerCmd.Stdout = os.Stdout
-	viewerCmd.Stderr = os.Stderr
-
-	err = viewerCmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to open PDF: %w", err)
 	}
 
 	return nil

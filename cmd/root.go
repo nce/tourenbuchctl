@@ -19,10 +19,13 @@ import (
 )
 
 var (
+	// Version displayed
 	//nolint: gochecknoglobals
 	Version = "dev"
+	// Commit ID added by release
 	//nolint: gochecknoglobals
 	Commit = "none"
+	// Date added by CI
 	//nolint: gochecknoglobals
 	Date = "unknown"
 )
@@ -39,6 +42,7 @@ func newRootCmd() *cobra.Command {
 			initLogging(debug)
 			initConfig()
 			log.Debug().Msg("Logging initialized")
+
 			if v, _ := cmd.Flags().GetBool("version"); v {
 				printVersion()
 			}

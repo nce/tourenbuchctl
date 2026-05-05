@@ -88,14 +88,14 @@ func GetFromHeader[T any](dir string, fields ...string) (map[string]T, error) {
 }
 
 //nolint:ireturn
-func searchField[T any](v interface{}, path string) (T, error) {
+func searchField[T any](v any, path string) (T, error) {
 	keys := strings.Split(path, ".")
 	header := reflect.ValueOf(v)
 
 	// Traverse the struct hierarchy using the keys
 	for _, key := range keys {
 		// Check if we are dealing with a pointer and dereference it
-		if header.Kind() == reflect.Ptr {
+		if header.Kind() == reflect.Pointer {
 			header = header.Elem()
 		}
 

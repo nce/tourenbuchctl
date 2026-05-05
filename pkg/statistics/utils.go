@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-func formatGermanDateString(t time.Time) string {
-	date := t.Format("02.01.2006")
+func formatGermanDateString(rawTime time.Time) string {
+	date := rawTime.Format("02.01.2006")
 	weekdayAbbreviations := map[string]string{
 		"Sunday":    "So",
 		"Monday":    "Mo",
@@ -17,7 +17,7 @@ func formatGermanDateString(t time.Time) string {
 		"Saturday":  "Sa",
 	}
 
-	fullWeekday := t.Weekday().String()
+	fullWeekday := rawTime.Weekday().String()
 	abbreviatedWeekday := weekdayAbbreviations[fullWeekday]
 
 	return fmt.Sprintf("%s, %s", abbreviatedWeekday, date)

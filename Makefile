@@ -4,7 +4,7 @@ CLIENT_DIR=$(GEN_DIR)/client
 APP_NAME=tourenbuchctl
 
 # renovate: github=golangci/golangci-lint
-GO_LINT_CI_VERSION := v1.64.8
+GO_LINT_CI_VERSION := v2.12.1
 LDFLAGS :="-X main.version=$(shell git describe --tags --always --dirty) -X main.commit=$(shell git rev-parse --short HEAD) -X main.date=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
 .PHONY: all clean generate build run
@@ -40,7 +40,7 @@ clean:
 
 .PHONY: golangci
 golangci:
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@${GO_LINT_CI_VERSION} -c .golangci.yaml run ./...
+	@go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GO_LINT_CI_VERSION} -c .golangci.yaml run ./...
 
 .PHONY: fmt
 fmt:
@@ -52,4 +52,4 @@ fmt:
 	@-go run github.com/catenacyber/perfsprint@latest -fix ./...
 	@-go run github.com/tetafro/godot/cmd/godot@latest -w .
 	# @-go run go run github.com/ssgreg/nlreturn/v2/cmd/nlreturn@latest -fix ./...
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@${GO_LINT_CI_VERSION} run ./... --fix
+	@go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GO_LINT_CI_VERSION} run ./... --fix

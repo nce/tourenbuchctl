@@ -38,7 +38,7 @@ func printMarkdown(activityCollection []activityData, regionalGrouping bool) {
 			})
 		}
 	} else {
-		var tableContent [][]string
+		tableContent := make([][]string, 0, len(activityCollection))
 
 		for _, activity := range activityCollection {
 			line := []string{

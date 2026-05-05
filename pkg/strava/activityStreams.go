@@ -64,7 +64,8 @@ func fetchActivityStream(activityID int64) (api.StreamSet, time.Time, string, er
 	meta, response, err := apiClient.ActivitiesApi.GetActivityById(
 		context.Background(),
 		activityID,
-		&api.ActivitiesApiGetActivityByIdOpts{})
+		&api.ActivitiesApiGetActivityByIdOpts{},
+	)
 	if err != nil {
 		return api.StreamSet{}, time.Time{}, "", fmt.Errorf("getActivityById(%d) failed: %w", activityID, err)
 	}

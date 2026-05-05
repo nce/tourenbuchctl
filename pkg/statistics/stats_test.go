@@ -1,7 +1,6 @@
 package statistics
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/nce/tourenbuchctl/pkg/activity"
@@ -12,6 +11,7 @@ import (
 func setupApp(t *testing.T) {
 	t.Helper()
 
+	//nolint: goconst
 	viper.Set("activities", []string{"mtb", "skitour"})
 	activity.SetupActivityKinds()
 }
@@ -49,7 +49,7 @@ func TestFilterActivityKinds(t *testing.T) {
 			t.Parallel()
 
 			result, err := filterActivityKinds(tt.activityKinds)
-			if !assert.Equal(t, reflect.TypeOf([]activity.Kind{}), reflect.TypeOf(result)) {
+			if !assert.IsType(t, []activity.Kind{}, result) {
 				t.Errorf("got %v, want %v", result, tt.expected)
 			}
 
