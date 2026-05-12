@@ -22,7 +22,8 @@ func NewGenCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "gen",
 		Short: "generate a pdf from a single activity. This needs to be run from a directory containing the activity",
-		Long:  "It parses the yaml/md description, compiles the elevation profile and map and generates a pdf file.",
+
+		Long: "It parses the yaml/md description, compiles the elevation profile and map and generates a pdf file.",
 		//nolint: revive
 		Run: func(cmd *cobra.Command, args []string) {
 			path, err := os.Getwd()

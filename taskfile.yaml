@@ -1,0 +1,22 @@
+version: '3'
+
+vars:
+  BINARY: "tourenbuchctl"
+
+tasks:
+  build:
+    desc: "Build application"
+    vars:
+      LDFLAGS:
+        sh: |
+          echo "-X main.version=$(git describe --tags --always --dirty) \
+          -X main.commit=$(git rev-parse --short HEAD) \
+          -X main.date=$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+    cmds:
+      - go build -ldflags="{{.LDFLAGS}}" -o {{.BINARY}} main.go
+ 
+  dev:
+    desc: "Run development setup"
+    cmds:
+      - air -c .air.toml
+
