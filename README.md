@@ -197,4 +197,4 @@ I [struggled with](#13) `swagger-codegen-cli-v3:3.0.58` on the `ActivitiesApiUpd
 switching to `2.4.43` solved the problem, though generated a wrong `model_lat_long.go`, which i
 had [to patch](https://github.com/nce/tourenbuchctl/blob/e2147617af8eaaae55847c9ee69f8fa6b2eb1e41/pkg/stravaapi/model_lat_lng.go#L12-L16).
 
-Refer to the [Makefile](Makefile) for the current swagger build.
+Refer to the [Taskfile](taskfile.yaml) for the current swagger build.

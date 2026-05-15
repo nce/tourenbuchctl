@@ -27,6 +27,7 @@ Godeps/
 tourenbuchctl
 
 # Build directories
+.air-tmp/
 _build/
 build/
 

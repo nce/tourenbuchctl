@@ -1,11 +1,40 @@
 version: '3'
 
 vars:
-  BINARY: "tourenbuchctl"
+  APP_NAME: tourenbuchctl
+  SWAGGER_FILE_URL: https://developers.strava.com/swagger/swagger.json
+  GEN_DIR: ./pkg/stravaapi
+  # renovate: github=golangci/golangci-lint
+  GO_LINT_CI_VERSION: v2.12.1
 
 tasks:
+  default:
+    desc: Generate the Strava client and build the application
+    deps:
+      - all
+
+  all:
+    desc: Generate the Strava client and build the application
+    cmds:
+      - task: generate
+      - task: build
+
+  generate:
+    desc: Generate the Go client from the Strava Swagger definition
+    cmds:
+      - mkdir -p {{.GEN_DIR}}
+      - >-
+        docker run --rm
+        -v "$PWD:/tmp:rw"
+        swaggerapi/swagger-codegen-cli:2.4.43
+        generate
+        -i {{.SWAGGER_FILE_URL}}
+        -l go
+        -o /tmp/{{.GEN_DIR}}
+        --additional-properties packageName=stravaapi
+
   build:
-    desc: "Build application"
+    desc: Build the Go application
     vars:
       LDFLAGS:
         sh: |
@@ -13,10 +42,61 @@ tasks:
           -X main.commit=$(git rev-parse --short HEAD) \
           -X main.date=$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
     cmds:
-      - go build -ldflags="{{.LDFLAGS}}" -o {{.BINARY}} main.go
- 
+      - go build -ldflags="{{.LDFLAGS}}" -o {{.APP_NAME}} main.go
+
+  run:
+    desc: Build and run the application
+    deps:
+      - build
+    cmds:
+      - ./{{.APP_NAME}}
+
+  check:
+    desc: Run tests and linting
+    cmds:
+      - task: test
+      - task: lint
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - task: golangci
+
+  test:
+    desc: Run Go tests with the race detector
+    cmds:
+      - go test -race ./...
+
+  clean:
+    desc: Remove generated files and the local binary
+    cmds:
+      - rm -rf {{.GEN_DIR}}
+      - rm -f {{.APP_NAME}}
+
+  golangci:
+    desc: Run golangci-lint with the pinned version
+    cmds:
+      - go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GO_LINT_CI_VERSION}} -c .golangci.yaml run ./...
+
+  fmt:
+    desc: Format and auto-fix Go code
+    cmds:
+      - go fmt ./...
+      - cmd: go run github.com/daixiang0/gci@latest write .
+        ignore_error: true
+      - cmd: go run mvdan.cc/gofumpt@latest -l -w .
+        ignore_error: true
+      - cmd: go run golang.org/x/tools/cmd/goimports@latest -l -w .
+        ignore_error: true
+      - cmd: go run github.com/bombsimon/wsl/v4/cmd...@latest -strict-append -test=true -fix ./...
+        ignore_error: true
+      - cmd: go run github.com/catenacyber/perfsprint@latest -fix ./...
+        ignore_error: true
+      - cmd: go run github.com/tetafro/godot/cmd/godot@latest -w .
+        ignore_error: true
+      - go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GO_LINT_CI_VERSION}} run ./... --fix
+
   dev:
-    desc: "Run development setup"
+    desc: Run development setup
     cmds:
       - air -c .air.toml
-
