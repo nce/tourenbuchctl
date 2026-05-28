@@ -1,11 +1,15 @@
 package activity
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 
+	"github.com/nce/tourenbuchctl/pkg/maprender"
 	"github.com/nce/tourenbuchctl/pkg/strava"
 	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -13,12 +17,12 @@ var (
 	ErrDateNotInitialized         = errors.New("date not properly initialized")
 )
 
+//nolint:nestif
 func (a *Activity) StravaSync() error {
 	if a.Tb.Date.IsZero() {
 		return fmt.Errorf("found empty: %w", ErrDateNotInitialized)
 	}
 
-	//nolint: nestif
 	if a.Meta.StravaSync {
 		stats, err := strava.FetchStravaData(a.Tb.Date)
 		if err != nil {
@@ -79,13 +83,46 @@ func (a *Activity) StravaSync() error {
 			a.Meta.Category = stats.SportType
 		}
 
-		err := strava.ExportStravaToGpx(a.Meta.StravaID, a.Meta.AssetLocation+"input.gpx")
+		gpxFile := a.Meta.AssetLocation + "input.gpx"
+
+		err := strava.ExportStravaToGpx(a.Meta.StravaID, gpxFile)
 		if err != nil {
 			return fmt.Errorf("exporting gpx from strava: %w", err)
 		}
 
-		log.Info().Str("gpxFile", a.Meta.AssetLocation+"input.gpx").Msg("Exported Strava data to GPX")
+		log.Info().Str("gpxFile", gpxFile).Msg("Exported Strava data to GPX")
+
+		generateMapForGpx(gpxFile, a.Meta.Category)
 	}
 
 	return nil
+}
+
+func generateMapForGpx(gpxFile string, activityType string) {
+	apiKey := viper.GetString("THUNDERFOREST_API_KEY")
+	if apiKey == "" {
+		log.Info().Msg("THUNDERFOREST_API_KEY not configured; skipping map generation")
+
+		return
+	}
+
+	mapFile := filepath.Join(filepath.Dir(gpxFile), "map.png")
+
+	err := maprender.GenerateForActivity(context.Background(), gpxFile, mapFile, apiKey, activityType)
+	if err != nil {
+		if errors.Is(err, maprender.ErrMissingAPIKey) {
+			log.Info().Msg("THUNDERFOREST_API_KEY not configured; skipping map generation")
+
+			return
+		}
+
+		log.Warn().
+			Err(err).
+			Str("gpxFile", gpxFile).
+			Msg("Generating Thunderforest map failed; gen will retry if map.png is missing")
+
+		return
+	}
+
+	log.Info().Str("mapFile", mapFile).Msg("Generated Thunderforest map")
 }

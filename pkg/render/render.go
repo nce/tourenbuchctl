@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -14,9 +15,11 @@ import (
 	"time"
 
 	"github.com/nce/tourenbuchctl/pkg/activity"
+	"github.com/nce/tourenbuchctl/pkg/maprender"
 	"github.com/nce/tourenbuchctl/pkg/pdfexport"
 	"github.com/nce/tourenbuchctl/pkg/utils"
 	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
 )
 
 type PageOpts struct {
@@ -136,6 +139,10 @@ func (n *PageOpts) GenerateSinglePageActivity(preventCleanup bool) error {
 
 	if err = n.extractGpxData(); err != nil {
 		return fmt.Errorf("failed to extract gpx data: %w", err)
+	}
+
+	if err = n.generateMap(); err != nil {
+		return fmt.Errorf("failed to generate map: %w", err)
 	}
 
 	if err = n.generateLatexDescription(); err != nil {
@@ -262,6 +269,41 @@ func (n *PageOpts) extractGpxData() error {
 	if err != nil {
 		return fmt.Errorf("failed to extract gpx data: %w", err)
 	}
+
+	return nil
+}
+
+func (n *PageOpts) generateMap() error {
+	apiKey := viper.GetString("THUNDERFOREST_API_KEY")
+	if apiKey == "" {
+		log.Info().Msg("THUNDERFOREST_API_KEY not configured; skipping map generation")
+
+		return nil
+	}
+
+	inputPath := filepath.Join(n.AbsoluteAssetDir, n.RelativeCwd, "input.gpx")
+	outputPath := filepath.Join(n.AbsoluteAssetDir, n.RelativeCwd, "map.png")
+
+	if _, err := os.Stat(outputPath); err == nil {
+		log.Info().Str("mapFile", outputPath).Msg("Map already exists; skipping map generation")
+
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("checking map file: %w", err)
+	}
+
+	err := maprender.GenerateForActivity(context.Background(), inputPath, outputPath, apiKey, n.ActivityType)
+	if err != nil {
+		if errors.Is(err, maprender.ErrMissingAPIKey) {
+			log.Info().Msg("THUNDERFOREST_API_KEY not configured; skipping map generation")
+
+			return nil
+		}
+
+		return fmt.Errorf("generating thunderforest map: %w", err)
+	}
+
+	log.Info().Str("mapFile", outputPath).Msg("Generated Thunderforest map")
 
 	return nil
 }
