@@ -51,6 +51,7 @@ Tourenbuch:
 ```yaml
 STRAVA_CLIENT_ID: "..."
 STRAVA_CLIENT_SECRET: "..."
+THUNDERFOREST_API_KEY: "..."
 activities:
   - mtb
   - skitour
@@ -119,13 +120,17 @@ tourenbuchctl sync --gpx=false
 ```
 
 The command writes statistics back into the activity metadata and stores the GPX
-as `input.gpx` in the asset directory.
+as `input.gpx` in the asset directory. If `THUNDERFOREST_API_KEY` is configured,
+it also creates a Thunderforest-backed `map.png` from that GPX track.
 
 ## Render an activity page
 
 `tourenbuchctl gen` renders the current activity directory as a single-page PDF.
 Run it from a directory that contains an activity `header.yaml` and
 `description.md`.
+
+If `map.png` is missing and `THUNDERFOREST_API_KEY` is configured, rendering
+creates it as a fallback before building the PDF.
 
 ```sh
 tourenbuchctl gen
